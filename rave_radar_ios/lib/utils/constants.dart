@@ -104,19 +104,19 @@ class AppDurations {
 
 class AppStrings {
   // Onboarding
-  static const String welcomeTitle = 'Pick your side of the bass';
-  static const String djButton = 'DJ: Take the Decks';
-  static const String raverButton = 'Raver: Hit the Floor';
-  static const String rankSelectionTitle = 'Rave Rookie or Festival Legend?\nChoose your rank.';
+  static const String welcomeTitle = 'Connect with the rave community';
+  static const String djButton = 'I\'m a DJ';
+  static const String raverButton = 'I\'m a Raver';
+  static const String rankSelectionTitle = 'How long have you been\nin the scene?';
   
   // Profile customization
-  static const String raverTagLabel = 'Raver Tag';
-  static const String raverTagHint = 'Enter your raver tag';
+  static const String raverTagLabel = 'Display Name';
+  static const String raverTagHint = 'What should we call you?';
   static const String usernameLabel = 'Username';
-  static const String usernameHint = 'Choose your @username';
-  static const String genresLabel = 'Preferred Genres (Select up to 3)';
-  static const String themeColorLabel = 'Profile Theme Color';
-  static const String continueButton = 'Continue to Dashboard';
+  static const String usernameHint = 'Create your unique handle';
+  static const String genresLabel = 'What music do you vibe with?';
+  static const String themeColorLabel = 'Pick your vibe';
+  static const String continueButton = 'Join the Community';
   static const String addPhotoText = 'Tap to add photo';
   static const String changePhotoText = 'Tap to change photo';
   static const String chooseProfilePicture = 'Choose Profile Picture';
@@ -124,9 +124,9 @@ class AppStrings {
   static const String gallery = 'Gallery';
   
   // Dashboard
-  static const String discover = 'Discover';
-  static const String progress = 'Progress';
-  static const String community = 'Community';
+  static const String discover = 'Feed';
+  static const String progress = 'Events';
+  static const String community = 'Connect';
   static const String profile = 'Profile';
   
   // Error messages

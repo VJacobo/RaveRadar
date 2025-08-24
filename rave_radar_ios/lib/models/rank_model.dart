@@ -40,8 +40,8 @@ class RankModel {
   static const List<RankModel> ranks = [
     RankModel(
       type: RankType.raveInitiate,
-      name: 'Rave Initiate',
-      description: 'Welcome to the underground! Start your journey.',
+      name: 'New to the Scene',
+      description: 'Just discovering the community. Welcome!',
       primaryColor: Color(0xFF00E5FF),
       secondaryColor: Color(0xFF00ACC1),
       level: 1,
@@ -58,8 +58,8 @@ class RankModel {
     ),
     RankModel(
       type: RankType.raveRegular,
-      name: 'Rave Regular',
-      description: 'You know the scene. The crowd knows you.',
+      name: 'Scene Regular',
+      description: 'Part of the community. Making connections.',
       primaryColor: Color(0xFF9C27B0),
       secondaryColor: Color(0xFF7B1FA2),
       level: 2,
@@ -77,8 +77,8 @@ class RankModel {
     ),
     RankModel(
       type: RankType.raveVeteran,
-      name: 'Rave Veteran',
-      description: 'A legend in the making. Respect earned.',
+      name: 'Community Veteran',
+      description: 'Experienced member. Helping others connect.',
       primaryColor: Color(0xFFE91E63),
       secondaryColor: Color(0xFFC2185B),
       level: 3,

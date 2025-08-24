@@ -119,19 +119,19 @@ class RaverRankScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.massive),
                 RaveButton(
-                  text: 'Rave Initiate',
+                  text: 'Just getting started',
                   onPressed: () => _navigateToProfile(context, RankType.raveInitiate),
                   backgroundColor: AppColors.raveInitiate,
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 RaveButton(
-                  text: 'Rave Regular',
+                  text: 'Been here a while',
                   onPressed: () => _navigateToProfile(context, RankType.raveRegular),
                   backgroundColor: AppColors.raveRegular,
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 RaveButton(
-                  text: 'Rave Veteran',
+                  text: 'Part of the culture',
                   onPressed: () => _navigateToProfile(context, RankType.raveVeteran),
                   backgroundColor: AppColors.raveVeteran,
                 ),
