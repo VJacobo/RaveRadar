@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:math' as math;
+import 'dart:async';
 import '../../blocs/feed/feed_bloc.dart';
 import '../../blocs/feed/feed_event.dart';
 import '../../blocs/feed/feed_state.dart';
@@ -8,6 +10,7 @@ import '../../models/rank_model.dart' as rank_model;
 import '../../models/post_model.dart';
 import '../../utils/constants.dart';
 import '../events/enhanced_events_tab.dart';
+import '../profile/enhanced_profile_tab.dart';
 
 class EnhancedSocialFeed extends StatefulWidget {
   final rank_model.UserProfile userProfile;
@@ -27,6 +30,8 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   late AnimationController _tabBarAnimationController;
   late Animation<double> _tabBarAnimation;
   bool _isTabBarVisible = true;
+  final ScrollController _feedScrollController = ScrollController();
+  Timer? _scrollEndTimer;
   
   @override
   void initState() {
@@ -50,14 +55,19 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
     );
     _tabBarAnimationController.forward();
     
+    _feedScrollController.addListener(_handleFeedScroll);
+    
     _feedBloc = FeedBloc();
     _feedBloc.add(LoadFeed());
   }
   
   @override
   void dispose() {
+    _scrollEndTimer?.cancel();
     _floatingButtonController.dispose();
     _tabBarAnimationController.dispose();
+    _feedScrollController.removeListener(_handleFeedScroll);
+    _feedScrollController.dispose();
     _feedBloc.close();
     super.dispose();
   }
@@ -74,6 +84,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   }
   
   void _handleScrollDirection(bool isScrollingDown) {
+    // This method is kept for compatibility with events tab
     if (isScrollingDown && _isTabBarVisible) {
       setState(() {
         _isTabBarVisible = false;
@@ -84,6 +95,41 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         _isTabBarVisible = true;
         _tabBarAnimationController.forward();
       });
+    }
+  }
+  
+  void _handleFeedScroll() {
+    if (_selectedIndex != 0) return; // Only handle scroll for feed tab
+    
+    // Hide tabs when scrolling up (reverse direction)
+    if (_feedScrollController.position.userScrollDirection == ScrollDirection.reverse) {
+      if (_isTabBarVisible) {
+        setState(() {
+          _isTabBarVisible = false;
+          _tabBarAnimationController.reverse();
+        });
+      }
+      
+      // Reset the timer for auto-show when scrolling stops
+      _scrollEndTimer?.cancel();
+      _scrollEndTimer = Timer(const Duration(milliseconds: 500), () {
+        // Show tabs when scrolling has stopped
+        if (!_isTabBarVisible) {
+          setState(() {
+            _isTabBarVisible = true;
+            _tabBarAnimationController.forward();
+          });
+        }
+      });
+    } else if (_feedScrollController.position.userScrollDirection == ScrollDirection.forward) {
+      // Show tabs immediately when scrolling down
+      _scrollEndTimer?.cancel();
+      if (!_isTabBarVisible) {
+        setState(() {
+          _isTabBarVisible = true;
+          _tabBarAnimationController.forward();
+        });
+      }
     }
   }
   
@@ -225,6 +271,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
               await Future.delayed(const Duration(seconds: 1));
             },
             child: CustomScrollView(
+              controller: _feedScrollController,
               slivers: [
                 SliverAppBar(
                   floating: true,
@@ -820,8 +867,9 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   }
   
   Widget _buildProfileTab() {
-    return const Center(
-      child: Text('Profile', style: AppTextStyles.headline2),
+    return EnhancedProfileTab(
+      userProfile: widget.userProfile,
+      isOwnProfile: true,
     );
   }
   
