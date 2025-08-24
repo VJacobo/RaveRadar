@@ -9,7 +9,9 @@ import '../../widgets/common/rave_text_field.dart';
 import '../../widgets/profile/profile_image_picker.dart';
 import '../../widgets/profile/genre_selector.dart';
 import '../../widgets/profile/theme_color_grid.dart';
-import '../dashboard/enhanced_social_feed.dart';
+import '../dashboard/refactored_social_feed.dart';
+import '../../utils/validators.dart';
+import '../../utils/error_handler.dart';
 
 class ProfileCustomizationScreen extends StatefulWidget {
   final RankType selectedRank;
@@ -128,7 +130,7 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
         });
       }
     } catch (e) {
-      _showErrorSnackBar(AppStrings.errorPickingImage);
+      ErrorHandler.showError(context, ErrorHandler.getErrorMessage(e));
     }
   }
 
@@ -150,20 +152,28 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
     setState(() {
       if (_selectedGenres.contains(genre)) {
         _selectedGenres.remove(genre);
-      } else if (_selectedGenres.length < 3) {
+      } else if (_selectedGenres.length < Validators.maxGenresSelection) {
         _selectedGenres.add(genre);
+      } else {
+        ErrorHandler.showWarning(
+          context,
+          'You can select up to ${Validators.maxGenresSelection} genres',
+        );
       }
     });
   }
 
   void _navigateToDashboard() {
-    if (!_isFormValid) return;
+    if (!_isFormValid) {
+      _validateAndShowErrors();
+      return;
+    }
     
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => 
-          EnhancedSocialFeed(
+          RefactoredSocialFeed(
             userProfile: UserProfile(
               id: 'user_${DateTime.now().millisecondsSinceEpoch}',
               djName: _raverTagController.text,
@@ -204,12 +214,21 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.errorColor,
-      ),
-    );
+    ErrorHandler.showError(context, message);
+  }
+
+  void _validateAndShowErrors() {
+    final usernameError = Validators.validateUsername(_usernameController.text);
+    final displayNameError = Validators.validateDisplayName(_raverTagController.text);
+    final genreError = Validators.validateGenreSelection(_selectedGenres);
+    
+    if (usernameError != null) {
+      ErrorHandler.showError(context, usernameError);
+    } else if (displayNameError != null) {
+      ErrorHandler.showError(context, displayNameError);
+    } else if (genreError != null) {
+      ErrorHandler.showError(context, genreError);
+    }
   }
 
   @override
