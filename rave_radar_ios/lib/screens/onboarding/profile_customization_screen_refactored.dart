@@ -9,7 +9,7 @@ import '../../widgets/common/rave_text_field.dart';
 import '../../widgets/profile/profile_image_picker.dart';
 import '../../widgets/profile/genre_selector.dart';
 import '../../widgets/profile/theme_color_grid.dart';
-import '../dashboard/refactored_social_feed.dart';
+import '../dashboard/enhanced_social_feed.dart';
 import '../../utils/validators.dart';
 import '../../utils/error_handler.dart';
 
@@ -173,7 +173,7 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => 
-          RefactoredSocialFeed(
+          EnhancedSocialFeed(
             userProfile: UserProfile(
               id: 'user_${DateTime.now().millisecondsSinceEpoch}',
               djName: _raverTagController.text,

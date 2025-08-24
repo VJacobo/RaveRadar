@@ -7,6 +7,7 @@ import '../../blocs/feed/feed_state.dart';
 import '../../models/rank_model.dart' as rank_model;
 import '../../models/post_model.dart';
 import '../../utils/constants.dart';
+import '../events/enhanced_events_tab.dart';
 
 class EnhancedSocialFeed extends StatefulWidget {
   final rank_model.UserProfile userProfile;
@@ -23,6 +24,9 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   late Animation<double> _floatingButtonAnimation;
   bool _isCreateMenuOpen = false;
   late FeedBloc _feedBloc;
+  late AnimationController _tabBarAnimationController;
+  late Animation<double> _tabBarAnimation;
+  bool _isTabBarVisible = true;
   
   @override
   void initState() {
@@ -36,6 +40,16 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
       curve: Curves.easeOut,
     );
     
+    _tabBarAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _tabBarAnimation = CurvedAnimation(
+      parent: _tabBarAnimationController,
+      curve: Curves.easeInOut,
+    );
+    _tabBarAnimationController.forward();
+    
     _feedBloc = FeedBloc();
     _feedBloc.add(LoadFeed());
   }
@@ -43,6 +57,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   @override
   void dispose() {
     _floatingButtonController.dispose();
+    _tabBarAnimationController.dispose();
     _feedBloc.close();
     super.dispose();
   }
@@ -56,6 +71,20 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         _floatingButtonController.reverse();
       }
     });
+  }
+  
+  void _handleScrollDirection(bool isScrollingDown) {
+    if (isScrollingDown && _isTabBarVisible) {
+      setState(() {
+        _isTabBarVisible = false;
+        _tabBarAnimationController.reverse();
+      });
+    } else if (!isScrollingDown && !_isTabBarVisible) {
+      setState(() {
+        _isTabBarVisible = true;
+        _tabBarAnimationController.forward();
+      });
+    }
   }
   
   @override
@@ -76,7 +105,15 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
           ),
         ),
         floatingActionButton: _selectedIndex == 0 ? _buildFloatingActionButton() : null,
-        bottomNavigationBar: _buildBottomNavBar(),
+        bottomNavigationBar: AnimatedBuilder(
+          animation: _tabBarAnimation,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(0, 100 * (1 - _tabBarAnimation.value)),
+              child: _buildBottomNavBar(),
+            );
+          },
+        ),
       ),
     );
   }
@@ -770,8 +807,9 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   }
   
   Widget _buildEventsTab() {
-    return const Center(
-      child: Text('Events', style: AppTextStyles.headline2),
+    return EnhancedEventsTab(
+      userProfile: widget.userProfile,
+      onScrollDirectionChanged: _handleScrollDirection,
     );
   }
   
