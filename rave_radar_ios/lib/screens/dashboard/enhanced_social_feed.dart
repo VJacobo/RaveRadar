@@ -11,6 +11,9 @@ import '../../models/post_model.dart';
 import '../../utils/constants.dart';
 import '../events/enhanced_events_tab.dart';
 import '../profile/enhanced_profile_tab.dart';
+import '../../widgets/mood/mood_selector_sheet.dart';
+import '../../models/mood_model.dart' as mood_model;
+import '../../services/mood_service.dart';
 
 class EnhancedSocialFeed extends StatefulWidget {
   final rank_model.UserProfile userProfile;
@@ -32,6 +35,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   bool _isTabBarVisible = true;
   final ScrollController _feedScrollController = ScrollController();
   Timer? _scrollEndTimer;
+  final MoodService _moodService = MoodService();
   
   @override
   void initState() {
@@ -59,6 +63,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
     
     _feedBloc = FeedBloc();
     _feedBloc.add(LoadFeed());
+    _moodService.initializeDemoData();
   }
   
   @override
@@ -192,7 +197,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   
   List<Widget> _buildCreateOptions() {
     final options = [
-      ('Mood', Icons.mood, MoodType.vibing.color),
+      ('Mood', Icons.mood, Colors.purple),
       ('Text', Icons.edit, Colors.blue),
       ('Photo', Icons.camera_alt, Colors.purple),
       ('Track', Icons.music_note, Colors.green),
@@ -225,7 +230,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
               FloatingActionButton.small(
                 onPressed: () {
                   _toggleCreateMenu();
-                  // Handle create action
+                  _handleCreateOption(option.$1);
                 },
                 backgroundColor: option.$3,
                 child: Icon(option.$2, color: Colors.white, size: 20),
@@ -235,6 +240,63 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         ),
       );
     }).toList();
+  }
+  
+  void _handleCreateOption(String type) {
+    switch (type) {
+      case 'Mood':
+        _showMoodSelector();
+        break;
+      case 'Text':
+        // TODO: Show text post creator
+        break;
+      case 'Photo':
+        // TODO: Show photo picker
+        break;
+      case 'Track':
+        // TODO: Show track selector
+        break;
+      case 'Event':
+        // TODO: Show event creator
+        break;
+    }
+  }
+  
+  void _showMoodSelector() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => MoodSelectorSheet(
+        onMoodSelected: (mood, location, event) {
+          _moodService.postMood(
+            userId: widget.userProfile.id,
+            userName: widget.userProfile.djName,
+            userAvatar: widget.userProfile.avatarUrl ?? '',
+            mood: mood,
+            location: location,
+            event: event,
+          );
+          
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Text('${mood.emoji} '),
+                  Text('Mood posted for 24 hours!'),
+                ],
+              ),
+              backgroundColor: mood.color,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          
+          // Refresh feed
+          _feedBloc.add(RefreshFeed());
+        },
+      ),
+    );
   }
   
   Widget _buildFeedTab() {
