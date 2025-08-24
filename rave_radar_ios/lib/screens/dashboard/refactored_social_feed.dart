@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/rank_model.dart' as rank_model;
 import '../../models/post_model.dart';
-import '../../models/mood_model.dart';
+import '../../models/mood_model.dart' as mood_model;
 import '../../models/event_model.dart';
 import '../../services/post_service.dart';
 import '../../services/event_service.dart';
@@ -384,6 +384,31 @@ class _MoodPostCreator extends StatefulWidget {
 class _MoodPostCreatorState extends State<_MoodPostCreator> {
   MoodType? _selectedMood;
 
+  String _getMoodEmoji(MoodType mood) {
+    switch (mood) {
+      case MoodType.floating:
+        return '💫';
+      case MoodType.hyped:
+        return '🔥';
+      case MoodType.vibing:
+        return '🌈';
+      case MoodType.euphoric:
+        return '✨';
+      case MoodType.chill:
+        return '😌';
+      case MoodType.energized:
+        return '⚡';
+      case MoodType.nostalgic:
+        return '💭';
+      case MoodType.underground:
+        return '🌙';
+    }
+  }
+
+  String _getMoodLabel(MoodType mood) {
+    return mood.label.replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
@@ -416,7 +441,7 @@ class _MoodPostCreatorState extends State<_MoodPostCreator> {
               const SizedBox(height: AppSpacing.xl),
               Text(
                 'Select a mood',
-                style: AppTextStyles.bodyLarge.copyWith(
+                style: AppTextStyles.body1.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -446,12 +471,12 @@ class _MoodPostCreatorState extends State<_MoodPostCreator> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              mood.emoji,
+                              _getMoodEmoji(mood),
                               style: const TextStyle(fontSize: 32),
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
-                              mood.label,
+                              _getMoodLabel(mood),
                               style: AppTextStyles.caption,
                               textAlign: TextAlign.center,
                               maxLines: 2,
@@ -473,7 +498,7 @@ class _MoodPostCreatorState extends State<_MoodPostCreator> {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Mood posted: ${_selectedMood!.displayName}'),
+                        content: Text('Mood posted: ${_getMoodLabel(_selectedMood!)}'),
                         backgroundColor: _selectedMood!.color,
                       ),
                     );
@@ -509,23 +534,23 @@ class _LocationPostCreator extends StatefulWidget {
 }
 
 class _LocationPostCreatorState extends State<_LocationPostCreator> {
-  LocationTag? _selectedLocation;
+  mood_model.LocationTag? _selectedLocation;
   final TextEditingController _searchController = TextEditingController();
-  List<LocationTag> _filteredLocations = [];
+  List<mood_model.LocationTag> _filteredLocations = [];
   
-  final List<LocationTag> _locations = [
-    LocationTag(id: '1', name: 'Berghain', type: 'club'),
-    LocationTag(id: '2', name: 'Fabric London', type: 'club'),
-    LocationTag(id: '3', name: 'Output Brooklyn', type: 'club'),
-    LocationTag(id: '4', name: 'Space Miami', type: 'club'),
-    LocationTag(id: '5', name: 'Printworks London', type: 'venue'),
-    LocationTag(id: '6', name: 'Brooklyn Mirage', type: 'venue'),
-    LocationTag(id: '7', name: 'Red Rocks', type: 'venue'),
-    LocationTag(id: '8', name: 'The Warehouse Project', type: 'venue'),
-    LocationTag(id: '9', name: 'Miami', type: 'city'),
-    LocationTag(id: '10', name: 'New York', type: 'city'),
-    LocationTag(id: '11', name: 'Los Angeles', type: 'city'),
-    LocationTag(id: '12', name: 'Chicago', type: 'city'),
+  final List<mood_model.LocationTag> _locations = [
+    mood_model.LocationTag(id: '1', name: 'Berghain', type: 'club'),
+    mood_model.LocationTag(id: '2', name: 'Fabric London', type: 'club'),
+    mood_model.LocationTag(id: '3', name: 'Output Brooklyn', type: 'club'),
+    mood_model.LocationTag(id: '4', name: 'Space Miami', type: 'club'),
+    mood_model.LocationTag(id: '5', name: 'Printworks London', type: 'venue'),
+    mood_model.LocationTag(id: '6', name: 'Brooklyn Mirage', type: 'venue'),
+    mood_model.LocationTag(id: '7', name: 'Red Rocks', type: 'venue'),
+    mood_model.LocationTag(id: '8', name: 'The Warehouse Project', type: 'venue'),
+    mood_model.LocationTag(id: '9', name: 'Miami', type: 'city'),
+    mood_model.LocationTag(id: '10', name: 'New York', type: 'city'),
+    mood_model.LocationTag(id: '11', name: 'Los Angeles', type: 'city'),
+    mood_model.LocationTag(id: '12', name: 'Chicago', type: 'city'),
   ];
 
   @override

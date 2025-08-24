@@ -121,6 +121,8 @@ class PostService {
         return _trackContent[index % _trackContent.length];
       case PostType.event:
         return _eventContent[index % _eventContent.length];
+      case PostType.location:
+        return 'Checked in at ${_eventContent[index % _eventContent.length]}';
     }
   }
 

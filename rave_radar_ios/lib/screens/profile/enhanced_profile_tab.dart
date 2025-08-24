@@ -807,6 +807,10 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with SingleTick
         icon = Icons.event;
         color = Colors.orange;
         break;
+      case post_model.PostType.location:
+        icon = Icons.location_on;
+        color = Colors.red;
+        break;
     }
     
     return Container(
