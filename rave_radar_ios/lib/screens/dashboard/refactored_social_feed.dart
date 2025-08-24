@@ -6,6 +6,7 @@ import '../../utils/constants.dart';
 import '../../widgets/feed/post_card.dart';
 import '../../widgets/feed/mood_filter_bar.dart';
 import '../../widgets/feed/create_post_menu.dart';
+import '../events/events_discovery_screen.dart';
 
 class RefactoredSocialFeed extends StatefulWidget {
   final rank_model.UserProfile userProfile;
@@ -274,7 +275,19 @@ class _RefactoredSocialFeedState extends State<RefactoredSocialFeed>
       ),
       child: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: (index) {
+          if (index == 1) {
+            // Navigate to Events screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EventsDiscoveryScreen(),
+              ),
+            );
+          } else {
+            setState(() => _selectedIndex = index);
+          }
+        },
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.transparent,
         selectedItemColor: Colors.purple,
