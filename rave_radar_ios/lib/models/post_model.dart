@@ -6,6 +6,7 @@ enum PostType {
   photo,      // Photo uploads
   track,      // Music/track share
   event,      // Event shoutout
+  location,   // Location check-in
 }
 
 enum MoodType {

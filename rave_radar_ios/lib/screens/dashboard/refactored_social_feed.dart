@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/rank_model.dart' as rank_model;
 import '../../models/post_model.dart';
+import '../../models/mood_model.dart';
+import '../../models/event_model.dart';
 import '../../services/post_service.dart';
+import '../../services/event_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/feed/post_card.dart';
 import '../../widgets/feed/mood_filter_bar.dart';
@@ -67,11 +70,63 @@ class _RefactoredSocialFeedState extends State<RefactoredSocialFeed>
 
   void _handlePostTypeSelected(PostType type) {
     _toggleCreateMenu();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Creating ${type.name} post...'),
-        backgroundColor: AppColors.backgroundTertiary,
+    
+    switch (type) {
+      case PostType.mood:
+        _showMoodPostDialog();
+        break;
+      case PostType.location:
+        _showLocationPostDialog();
+        break;
+      case PostType.event:
+        _showEventPostDialog();
+        break;
+      case PostType.text:
+      case PostType.photo:
+      case PostType.track:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Creating ${type.name} post...'),
+            backgroundColor: AppColors.backgroundTertiary,
+          ),
+        );
+        break;
+    }
+  }
+
+  void _showMoodPostDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.backgroundSecondary,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
+      builder: (context) => _MoodPostCreator(),
+    );
+  }
+
+  void _showLocationPostDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.backgroundSecondary,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      ),
+      builder: (context) => _LocationPostCreator(),
+    );
+  }
+
+  void _showEventPostDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.backgroundSecondary,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      ),
+      builder: (context) => _EventPostCreator(),
     );
   }
 
@@ -317,6 +372,487 @@ class _RefactoredSocialFeedState extends State<RefactoredSocialFeed>
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MoodPostCreator extends StatefulWidget {
+  @override
+  State<_MoodPostCreator> createState() => _MoodPostCreatorState();
+}
+
+class _MoodPostCreatorState extends State<_MoodPostCreator> {
+  MoodType? _selectedMood;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Share Your Mood',
+                style: AppTextStyles.headline2.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                'Select a mood',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              SizedBox(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: MoodType.values.length,
+                  itemBuilder: (context, index) {
+                    final mood = MoodType.values[index];
+                    final isSelected = _selectedMood == mood;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedMood = mood),
+                      child: Container(
+                        width: 80,
+                        margin: const EdgeInsets.only(right: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: isSelected ? mood.color.withOpacity(0.2) : AppColors.backgroundTertiary,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                            color: isSelected ? mood.color : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              mood.emoji,
+                              style: const TextStyle(fontSize: 32),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              mood.label,
+                              style: AppTextStyles.caption,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const Spacer(),
+              const SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _selectedMood != null ? () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Mood posted: ${_selectedMood!.displayName}'),
+                        backgroundColor: _selectedMood!.color,
+                      ),
+                    );
+                  } : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                  ),
+                  child: const Text(
+                    'Share Mood',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LocationPostCreator extends StatefulWidget {
+  @override
+  State<_LocationPostCreator> createState() => _LocationPostCreatorState();
+}
+
+class _LocationPostCreatorState extends State<_LocationPostCreator> {
+  LocationTag? _selectedLocation;
+  final TextEditingController _searchController = TextEditingController();
+  List<LocationTag> _filteredLocations = [];
+  
+  final List<LocationTag> _locations = [
+    LocationTag(id: '1', name: 'Berghain', type: 'club'),
+    LocationTag(id: '2', name: 'Fabric London', type: 'club'),
+    LocationTag(id: '3', name: 'Output Brooklyn', type: 'club'),
+    LocationTag(id: '4', name: 'Space Miami', type: 'club'),
+    LocationTag(id: '5', name: 'Printworks London', type: 'venue'),
+    LocationTag(id: '6', name: 'Brooklyn Mirage', type: 'venue'),
+    LocationTag(id: '7', name: 'Red Rocks', type: 'venue'),
+    LocationTag(id: '8', name: 'The Warehouse Project', type: 'venue'),
+    LocationTag(id: '9', name: 'Miami', type: 'city'),
+    LocationTag(id: '10', name: 'New York', type: 'city'),
+    LocationTag(id: '11', name: 'Los Angeles', type: 'city'),
+    LocationTag(id: '12', name: 'Chicago', type: 'city'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredLocations = _locations;
+    _searchController.addListener(_filterLocations);
+  }
+
+  void _filterLocations() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredLocations = _locations
+          .where((location) => location.name.toLowerCase().contains(query))
+          .toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Check In to Location',
+                style: AppTextStyles.headline2.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search locations...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: AppColors.backgroundTertiary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: _filteredLocations.length,
+                  itemBuilder: (context, index) {
+                    final location = _filteredLocations[index];
+                    final isSelected = _selectedLocation == location;
+                    return Card(
+                      color: isSelected ? Colors.purple.withOpacity(0.1) : AppColors.backgroundTertiary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        side: BorderSide(
+                          color: isSelected ? Colors.purple : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: ListTile(
+                        onTap: () => setState(() => 
+                          _selectedLocation = isSelected ? null : location
+                        ),
+                        leading: Icon(
+                          location.type == 'club' ? Icons.nightlife :
+                          location.type == 'venue' ? Icons.stadium :
+                          Icons.location_city,
+                          color: isSelected ? Colors.purple : AppColors.textSecondary,
+                        ),
+                        title: Text(
+                          location.name,
+                          style: TextStyle(
+                            color: isSelected ? Colors.purple : AppColors.textPrimary,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        subtitle: Text(
+                          location.type.toUpperCase(),
+                          style: AppTextStyles.caption,
+                        ),
+                        trailing: isSelected ? 
+                          const Icon(Icons.check_circle, color: Colors.purple) : null,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _selectedLocation != null ? () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Checked in at ${_selectedLocation!.name}'),
+                        backgroundColor: Colors.purple,
+                      ),
+                    );
+                  } : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                  ),
+                  child: const Text(
+                    'Check In',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _EventPostCreator extends StatefulWidget {
+  @override
+  State<_EventPostCreator> createState() => _EventPostCreatorState();
+}
+
+class _EventPostCreatorState extends State<_EventPostCreator> {
+  EventModel? _selectedEvent;
+  final TextEditingController _searchController = TextEditingController();
+  List<EventModel> _filteredEvents = [];
+  final EventService _eventService = EventService();
+
+  @override
+  void initState() {
+    super.initState();
+    _eventService.initializeRealWorldEvents();
+    _filteredEvents = _eventService.getUpcomingEvents();
+    _searchController.addListener(_filterEvents);
+  }
+
+  void _filterEvents() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredEvents = _eventService.getUpcomingEvents().where((event) {
+        return event.name.toLowerCase().contains(query) ||
+               event.venue.toLowerCase().contains(query) ||
+               event.location.toLowerCase().contains(query) ||
+               event.artists.any((artist) => artist.toLowerCase().contains(query));
+      }).toList();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Share an Event',
+                style: AppTextStyles.headline2.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search events, venues, or artists...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: AppColors.backgroundTertiary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: _filteredEvents.length,
+                  itemBuilder: (context, index) {
+                    final event = _filteredEvents[index];
+                    final isSelected = _selectedEvent == event;
+                    return Card(
+                      color: isSelected ? event.typeColor.withOpacity(0.1) : AppColors.backgroundTertiary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        side: BorderSide(
+                          color: isSelected ? event.typeColor : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: ListTile(
+                        onTap: () => setState(() => 
+                          _selectedEvent = isSelected ? null : event
+                        ),
+                        leading: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: event.typeColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: Icon(
+                            event.typeIcon,
+                            color: event.typeColor,
+                          ),
+                        ),
+                        title: Text(
+                          event.name,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${event.venue} • ${event.location}',
+                              style: AppTextStyles.caption,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${event.formattedDate} • ${event.daysUntil}',
+                              style: AppTextStyles.caption.copyWith(
+                                color: event.typeColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: isSelected ? 
+                          Icon(Icons.check_circle, color: event.typeColor) : null,
+                        isThreeLine: true,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _selectedEvent != null ? () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Shared event: ${_selectedEvent!.name}'),
+                        backgroundColor: _selectedEvent!.typeColor,
+                      ),
+                    );
+                  } : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                  ),
+                  child: const Text(
+                    'Share Event',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

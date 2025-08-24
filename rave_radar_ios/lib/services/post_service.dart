@@ -19,6 +19,58 @@ class PostService {
     }).toList();
   }
 
+  List<Post> getPostsByUserId(String userId) {
+    // For demo, create some posts for the current user if none exist
+    if (_posts.where((p) => p.userId == userId).isEmpty && userId == 'guest_user') {
+      _createUserPosts(userId);
+    }
+    
+    return _posts
+        .where((post) => post.userId == userId)
+        .toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  }
+
+  void _createUserPosts(String userId) {
+    // Create sample posts for the user
+    final postTypes = [PostType.mood, PostType.text, PostType.track, PostType.photo, PostType.event];
+    final moods = MoodType.values;
+    
+    for (int i = 0; i < 5; i++) {
+      final type = postTypes[i % postTypes.length];
+      _posts.add(Post(
+        id: 'user_post_$i',
+        userId: userId,
+        userName: 'Guest User',
+        userHandle: '@guest',
+        type: type,
+        timestamp: DateTime.now().subtract(Duration(days: i, hours: _random.nextInt(24))),
+        content: _getContentForType(type, i),
+        mood: type == PostType.mood ? moods[_random.nextInt(moods.length)] : null,
+        trackTitle: type == PostType.track ? 'My Mix #${i + 1}' : null,
+        trackArtist: type == PostType.track ? 'Guest User' : null,
+        eventName: type == PostType.event ? 'My Event #${i + 1}' : null,
+        eventLocation: type == PostType.event ? 'Miami Beach' : null,
+        eventTime: type == PostType.event 
+          ? DateTime.now().add(Duration(days: _random.nextInt(30)))
+          : null,
+        mediaUrls: type == PostType.photo 
+          ? ['https://images.unsplash.com/photo-1514525253161-7a46d19cd819']
+          : null,
+        reactions: {
+          ReactionType.hype: _random.nextInt(50),
+          ReactionType.love: _random.nextInt(30),
+          ReactionType.glow: _random.nextInt(20),
+          ReactionType.vibe: _random.nextInt(40),
+          ReactionType.bass: _random.nextInt(25),
+          ReactionType.drop: _random.nextInt(15),
+        },
+        commentCount: _random.nextInt(20),
+        shareCount: _random.nextInt(10),
+      ));
+    }
+  }
+
   void initializeMockData() {
     if (_posts.isNotEmpty) return;
     
