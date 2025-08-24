@@ -4,6 +4,7 @@ import '../../models/rank_model.dart' as rank_model;
 import '../../models/post_model.dart';
 import '../../utils/constants.dart';
 import '../../widgets/common/rave_button.dart';
+import '../animals_screen.dart';
 
 class EnhancedSocialFeed extends StatefulWidget {
   final rank_model.UserProfile userProfile;
@@ -149,6 +150,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
             _buildEventsTab(),
             _buildConnectTab(),
             _buildProfileTab(),
+            const AnimalsScreen(),
           ],
         ),
       ),
@@ -850,6 +852,11 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pets_outlined),
+            activeIcon: Icon(Icons.pets),
+            label: 'Test',
           ),
         ],
       ),

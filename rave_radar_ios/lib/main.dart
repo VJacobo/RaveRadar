@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models/rank_model.dart';
 import 'screens/onboarding/profile_customization_screen_refactored.dart';
+import 'screens/dashboard/enhanced_social_feed.dart';
 import 'utils/constants.dart';
 import 'widgets/common/rave_button.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await Supabase.initialize(
+    url: 'https://ufkyyjyxodahuvjhmmat.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVma3l5anl4b2RhaHV2amhtbWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3NDg5NjIsImV4cCI6MjA3MTMyNDk2Mn0.zBsIPgDXg5NtRBi2wMVP0lBAqbqbIthmpjEa2MEeYY0',
+  );
+  
   runApp(const RaveRadarApp());
 }
 
@@ -27,6 +36,32 @@ class RaveRadarApp extends StatelessWidget {
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
+
+  void _skipToMainApp(BuildContext context) {
+    // Create a default user profile for skipping onboarding
+    final defaultProfile = UserProfile(
+      id: 'guest_user',
+      djName: 'Guest User',
+      username: '@guest',
+      avatarUrl: null,
+      currentRank: RankType.raveInitiate,
+      totalPoints: 0,
+      preferredGenres: ['House', 'Techno'],
+      profileTheme: {
+        'primaryColor': AppColors.raveInitiate.value,
+        'secondaryColor': AppColors.raveInitiateSecondary.value,
+      },
+      unlockedBadges: [],
+      joinedDate: DateTime.now(),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EnhancedSocialFeed(userProfile: defaultProfile),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +101,16 @@ class WelcomeScreen extends StatelessWidget {
                   },
                   backgroundColor: Colors.pink,
                 ),
+                const SizedBox(height: AppSpacing.massive),
+                TextButton(
+                  onPressed: () => _skipToMainApp(context),
+                  child: Text(
+                    'Skip for now',
+                    style: AppTextStyles.body1.copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -77,6 +122,33 @@ class WelcomeScreen extends StatelessWidget {
 
 class RaverRankScreen extends StatelessWidget {
   const RaverRankScreen({super.key});
+
+  void _skipToMainApp(BuildContext context) {
+    // Create a default user profile for skipping onboarding
+    final defaultProfile = UserProfile(
+      id: 'guest_user',
+      djName: 'Guest User',
+      username: '@guest',
+      avatarUrl: null,
+      currentRank: RankType.raveInitiate,
+      totalPoints: 0,
+      preferredGenres: ['House', 'Techno'],
+      profileTheme: {
+        'primaryColor': AppColors.raveInitiate.value,
+        'secondaryColor': AppColors.raveInitiateSecondary.value,
+      },
+      unlockedBadges: [],
+      joinedDate: DateTime.now(),
+    );
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EnhancedSocialFeed(userProfile: defaultProfile),
+      ),
+      (route) => false,
+    );
+  }
 
   void _navigateToProfile(BuildContext context, RankType rankType) {
     Navigator.push(
@@ -134,6 +206,16 @@ class RaverRankScreen extends StatelessWidget {
                   text: 'Part of the culture',
                   onPressed: () => _navigateToProfile(context, RankType.raveVeteran),
                   backgroundColor: AppColors.raveVeteran,
+                ),
+                const SizedBox(height: AppSpacing.massive),
+                TextButton(
+                  onPressed: () => _skipToMainApp(context),
+                  child: Text(
+                    'Skip for now',
+                    style: AppTextStyles.body1.copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
               ],
             ),
