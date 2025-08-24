@@ -9,7 +9,7 @@ import '../../widgets/common/rave_text_field.dart';
 import '../../widgets/profile/profile_image_picker.dart';
 import '../../widgets/profile/genre_selector.dart';
 import '../../widgets/profile/theme_color_grid.dart';
-import '../dashboard/social_feed_screen.dart';
+import '../dashboard/enhanced_social_feed.dart';
 
 class ProfileCustomizationScreen extends StatefulWidget {
   final RankType selectedRank;
@@ -163,7 +163,7 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => 
-          SocialFeedScreen(
+          EnhancedSocialFeed(
             userProfile: UserProfile(
               id: 'user_${DateTime.now().millisecondsSinceEpoch}',
               djName: _raverTagController.text,
