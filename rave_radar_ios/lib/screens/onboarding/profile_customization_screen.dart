@@ -133,8 +133,6 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
               const SizedBox(height: 32),
               
               // Profile Picture Selection
-              _buildSectionTitle('Profile Picture'),
-              const SizedBox(height: 16),
               Center(
                 child: Stack(
                   children: [
