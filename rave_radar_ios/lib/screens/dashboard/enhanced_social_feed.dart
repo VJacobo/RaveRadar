@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:math' as math;
+import '../../blocs/feed/feed_bloc.dart';
+import '../../blocs/feed/feed_event.dart';
+import '../../blocs/feed/feed_state.dart';
 import '../../models/rank_model.dart' as rank_model;
 import '../../models/post_model.dart';
 import '../../utils/constants.dart';
-import '../../widgets/common/rave_button.dart';
 import '../animals_screen.dart';
 
 class EnhancedSocialFeed extends StatefulWidget {
@@ -17,12 +20,10 @@ class EnhancedSocialFeed extends StatefulWidget {
 
 class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProviderStateMixin {
   int _selectedIndex = 0;
-  MoodType? _filterMood;
   late AnimationController _floatingButtonController;
   late Animation<double> _floatingButtonAnimation;
   bool _isCreateMenuOpen = false;
-  
-  final List<Post> _mockPosts = [];
+  late FeedBloc _feedBloc;
   
   @override
   void initState() {
@@ -35,92 +36,16 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
       parent: _floatingButtonController,
       curve: Curves.easeOut,
     );
-    _generateMockPosts();
+    
+    _feedBloc = FeedBloc();
+    _feedBloc.add(LoadFeed());
   }
   
   @override
   void dispose() {
     _floatingButtonController.dispose();
+    _feedBloc.close();
     super.dispose();
-  }
-  
-  void _generateMockPosts() {
-    final random = math.Random();
-    final moods = MoodType.values;
-    final names = ['BassHead', 'RaveQueen', 'DropMaster', 'NeonVibes', 'TechnoSoul'];
-    
-    for (int i = 0; i < 20; i++) {
-      final postTypes = PostType.values;
-      final type = postTypes[random.nextInt(postTypes.length)];
-      
-      _mockPosts.add(Post(
-        id: 'post_$i',
-        userId: 'user_$i',
-        userName: '${names[i % names.length]}${i ~/ names.length > 0 ? i ~/ names.length : ''}',
-        userHandle: '@${names[i % names.length].toLowerCase()}${i}',
-        type: type,
-        timestamp: DateTime.now().subtract(Duration(
-          hours: random.nextInt(24),
-          minutes: random.nextInt(60),
-        )),
-        content: _getContentForType(type, i),
-        mood: type == PostType.mood ? moods[random.nextInt(moods.length)] : null,
-        trackTitle: type == PostType.track ? 'Underground Mix ${i + 1}' : null,
-        trackArtist: type == PostType.track ? 'DJ ${names[i % names.length]}' : null,
-        eventName: type == PostType.event ? 'Warehouse Sessions ${i + 1}' : null,
-        eventLocation: type == PostType.event ? 'Secret Location' : null,
-        eventTime: type == PostType.event 
-          ? DateTime.now().add(Duration(days: random.nextInt(7)))
-          : null,
-        reactions: _generateRandomReactions(),
-        commentCount: random.nextInt(50),
-        shareCount: random.nextInt(20),
-      ));
-    }
-    
-    _mockPosts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-  }
-  
-  String _getContentForType(PostType type, int index) {
-    switch (type) {
-      case PostType.mood:
-        final vibes = [
-          'The bass is hitting different tonight ✨',
-          'Lost in the rhythm 🌊',
-          'This set is taking me places 🚀',
-          'Pure euphoria on the dancefloor',
-          'When the drop hits just right 🔥',
-        ];
-        return vibes[index % vibes.length];
-      case PostType.text:
-        final thoughts = [
-          'Remember when we thought 3am was late? Now that\'s when the real magic starts 🌙',
-          'Shoutout to everyone who made last night unforgettable! You know who you are 💜',
-          'That moment when the DJ reads the crowd perfectly... pure magic',
-          'New underground spot discovered. If you know, you know 👁️',
-          'The scene isn\'t dead, it\'s just gone deeper underground',
-        ];
-        return thoughts[index % thoughts.length];
-      case PostType.photo:
-        return 'Last night\'s energy captured in one frame 📸';
-      case PostType.track:
-        return 'This track has been on repeat all day 🎵';
-      case PostType.event:
-        return 'Who\'s pulling up? Let\'s rage together! 🎉';
-    }
-  }
-  
-  Map<ReactionType, int> _generateRandomReactions() {
-    final random = math.Random();
-    final reactions = <ReactionType, int>{};
-    
-    for (final reaction in ReactionType.values.take(3 + random.nextInt(3))) {
-      if (random.nextBool()) {
-        reactions[reaction] = random.nextInt(100) + 1;
-      }
-    }
-    
-    return reactions;
   }
   
   void _toggleCreateMenu() {
@@ -136,26 +61,25 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   
   @override
   Widget build(BuildContext context) {
-    final filteredPosts = _filterMood != null
-      ? _mockPosts.where((post) => post.mood == _filterMood).toList()
-      : _mockPosts;
-    
-    return Scaffold(
-      backgroundColor: AppColors.backgroundPrimary,
-      body: SafeArea(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            _buildFeedTab(filteredPosts),
-            _buildEventsTab(),
-            _buildConnectTab(),
-            _buildProfileTab(),
-            const AnimalsScreen(),
-          ],
+    return BlocProvider(
+      create: (_) => _feedBloc,
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundPrimary,
+        body: SafeArea(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              _buildFeedTab(),
+              _buildEventsTab(),
+              _buildConnectTab(),
+              _buildProfileTab(),
+              const AnimalsScreen(),
+            ],
+          ),
         ),
+        floatingActionButton: _selectedIndex == 0 ? _buildFloatingActionButton() : null,
+        bottomNavigationBar: _buildBottomNavBar(),
       ),
-      floatingActionButton: _selectedIndex == 0 ? _buildFloatingActionButton() : null,
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
   
@@ -232,53 +156,100 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
     }).toList();
   }
   
-  Widget _buildFeedTab(List<Post> posts) {
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          floating: true,
-          backgroundColor: AppColors.backgroundPrimary,
-          title: Row(
-            children: [
-              Text('RaveRadar', style: AppTextStyles.headline2),
-              const SizedBox(width: AppSpacing.sm),
-              if (_filterMood != null)
-                Chip(
-                  label: Text(
-                    _filterMood!.label,
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                  backgroundColor: _filterMood!.color.withAlpha(128),
-                  deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
-                  onDeleted: () => setState(() => _filterMood = null),
+  Widget _buildFeedTab() {
+    return BlocBuilder<FeedBloc, FeedState>(
+      builder: (context, state) {
+        if (state is FeedLoading) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.purple),
+          );
+        }
+        
+        if (state is FeedError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Error: ${state.message}', style: AppTextStyles.body1),
+                const SizedBox(height: AppSpacing.md),
+                ElevatedButton(
+                  onPressed: () => _feedBloc.add(LoadFeed()),
+                  child: const Text('Retry'),
                 ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.filter_alt, color: AppColors.textPrimary),
-              onPressed: () => _showMoodFilter(),
+              ],
             ),
-            IconButton(
-              icon: Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
-              onPressed: () {},
+          );
+        }
+        
+        if (state is FeedLoaded) {
+          return RefreshIndicator(
+            color: Colors.purple,
+            backgroundColor: AppColors.backgroundSecondary,
+            onRefresh: () async {
+              _feedBloc.add(RefreshFeed());
+              await Future.delayed(const Duration(seconds: 1));
+            },
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  floating: true,
+                  backgroundColor: AppColors.backgroundPrimary,
+                  title: Row(
+                    children: [
+                      Text('RaveRadar', style: AppTextStyles.headline2),
+                      const SizedBox(width: AppSpacing.sm),
+                      if (state.filterMood != null)
+                        Chip(
+                          label: Text(
+                            state.filterMood!.label,
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                          backgroundColor: state.filterMood!.color.withAlpha(128),
+                          deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+                          onDeleted: () => _feedBloc.add(const FilterByMood(null)),
+                        ),
+                    ],
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: Icon(Icons.filter_alt, color: AppColors.textPrimary),
+                      onPressed: () => _showMoodFilter(state.filterMood),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+                SliverToBoxAdapter(
+                  child: _buildMoodBar(state.filterMood),
+                ),
+                if (state.posts.isEmpty)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Text('No posts yet', style: AppTextStyles.body1),
+                    ),
+                  )
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildPostCard(state.posts[index]),
+                      childCount: state.posts.length,
+                    ),
+                  ),
+              ],
             ),
-          ],
-        ),
-        SliverToBoxAdapter(
-          child: _buildMoodBar(),
-        ),
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildPostCard(posts[index]),
-            childCount: posts.length,
-          ),
-        ),
-      ],
+          );
+        }
+        
+        return Center(
+          child: Text('Loading feed...', style: AppTextStyles.body1),
+        );
+      },
     );
   }
   
-  Widget _buildMoodBar() {
+  Widget _buildMoodBar(MoodType? selectedMood) {
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -292,25 +263,25 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
               margin: const EdgeInsets.only(right: AppSpacing.sm),
               child: ActionChip(
                 label: const Text('All Vibes'),
-                onPressed: () => setState(() => _filterMood = null),
-                backgroundColor: _filterMood == null 
+                onPressed: () => _feedBloc.add(const FilterByMood(null)),
+                backgroundColor: selectedMood == null 
                   ? widget.userProfile.rank.primaryColor 
                   : AppColors.backgroundSecondary,
                 labelStyle: TextStyle(
-                  color: _filterMood == null ? Colors.white : AppColors.textPrimary,
+                  color: selectedMood == null ? Colors.white : AppColors.textPrimary,
                 ),
               ),
             );
           }
           
           final mood = MoodType.values[index - 1];
-          final isSelected = _filterMood == mood;
+          final isSelected = selectedMood == mood;
           
           return Container(
             margin: const EdgeInsets.only(right: AppSpacing.sm),
             child: ActionChip(
               label: Text(mood.label),
-              onPressed: () => setState(() => _filterMood = mood),
+              onPressed: () => _feedBloc.add(FilterByMood(mood)),
               backgroundColor: isSelected ? mood.color : AppColors.backgroundSecondary,
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : AppColors.textPrimary,
@@ -494,7 +465,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
                 const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
-                    Icon(Icons.play_circle_outline, size: 16, color: Colors.green),
+                    const Icon(Icons.play_circle_outline, size: 16, color: Colors.green),
                     const SizedBox(width: AppSpacing.xs),
                     Text('Play on Spotify', style: AppTextStyles.caption.copyWith(color: Colors.green)),
                   ],
@@ -525,7 +496,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         children: [
           Row(
             children: [
-              Icon(Icons.event, color: Colors.orange, size: 24),
+              const Icon(Icons.event, color: Colors.orange, size: 24),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -563,12 +534,12 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
                 child: OutlinedButton(
                   onPressed: () {},
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.orange),
+                    side: const BorderSide(color: Colors.orange),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
-                  child: Text('Interested', style: TextStyle(color: Colors.orange)),
+                  child: const Text('Interested', style: TextStyle(color: Colors.orange)),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -618,7 +589,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
                   post.isSaved ? Icons.bookmark : Icons.bookmark_border,
                   color: post.isSaved ? widget.userProfile.rank.primaryColor : AppColors.textPrimary,
                 ),
-                onPressed: () {},
+                onPressed: () => _feedBloc.add(ToggleSavePost(post.id)),
               ),
             ],
           ),
@@ -632,7 +603,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
     return GestureDetector(
       onLongPress: () => _showReactionPicker(post),
       onTap: () {
-        // Quick react with default reaction
+        _feedBloc.add(AddReaction(postId: post.id, reaction: ReactionType.love));
       },
       child: Row(
         children: [
@@ -720,7 +691,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
                   GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
-                      // Handle reaction
+                      _feedBloc.add(AddReaction(postId: post.id, reaction: reaction));
                     },
                     child: Container(
                       width: 60,
@@ -749,7 +720,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
     );
   }
   
-  void _showMoodFilter() {
+  void _showMoodFilter(MoodType? currentMood) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.backgroundSecondary,
@@ -778,12 +749,12 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
               children: MoodType.values.map((mood) => ActionChip(
                 label: Text(mood.label),
                 onPressed: () {
-                  setState(() => _filterMood = mood);
+                  _feedBloc.add(FilterByMood(mood));
                   Navigator.pop(context);
                 },
-                backgroundColor: _filterMood == mood ? mood.color : AppColors.backgroundTertiary,
+                backgroundColor: currentMood == mood ? mood.color : AppColors.backgroundTertiary,
                 labelStyle: TextStyle(
-                  color: _filterMood == mood ? Colors.white : AppColors.textPrimary,
+                  color: currentMood == mood ? Colors.white : AppColors.textPrimary,
                 ),
               )).toList(),
             ),
