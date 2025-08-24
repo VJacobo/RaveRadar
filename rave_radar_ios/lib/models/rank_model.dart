@@ -101,6 +101,7 @@ class RankModel {
 class UserProfile {
   final String id;
   final String djName;
+  final String username;
   final String? avatarUrl;
   final RankType currentRank;
   final int totalPoints;
@@ -112,6 +113,7 @@ class UserProfile {
   UserProfile({
     required this.id,
     required this.djName,
+    required this.username,
     this.avatarUrl,
     required this.currentRank,
     required this.totalPoints,

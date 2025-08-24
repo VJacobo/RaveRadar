@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/rank_model.dart';
 import '../dashboard/discovery_dashboard.dart';
 
@@ -15,14 +18,12 @@ class ProfileCustomizationScreen extends StatefulWidget {
 }
 
 class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen> {
-  final TextEditingController _djNameController = TextEditingController();
-  String _selectedAvatar = 'avatar1';
+  final TextEditingController _raverTagController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
   final List<String> _selectedGenres = [];
   Color _selectedThemeColor = Colors.purple;
-  
-  final List<String> _availableAvatars = [
-    'avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6'
-  ];
   
   final List<String> _genres = [
     'House', 'Techno', 'Trance', 'Drum & Bass',
@@ -36,6 +37,12 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
       Colors.blue,
       Colors.teal,
       Colors.lightBlue,
+      Colors.indigo,
+      const Color(0xFF00E5FF),
+      const Color(0xFF00ACC1),
+      const Color(0xFF0097A7),
+      Colors.blueGrey,
+      Colors.lightBlueAccent,
     ],
     RankType.raveRegular: [
       Colors.purple,
@@ -43,6 +50,16 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
       Colors.indigo,
       Colors.pink,
       Colors.amber,
+      const Color(0xFF9C27B0),
+      const Color(0xFF7B1FA2),
+      Colors.purpleAccent,
+      Colors.deepPurpleAccent,
+      Colors.pinkAccent,
+      Colors.orange,
+      Colors.lime,
+      Colors.teal,
+      Colors.cyan,
+      Colors.blue,
     ],
     RankType.raveVeteran: [
       Colors.pink,
@@ -52,6 +69,19 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
       Colors.yellow,
       Colors.green,
       Colors.black,
+      const Color(0xFFE91E63),
+      const Color(0xFFC2185B),
+      Colors.redAccent,
+      Colors.orangeAccent,
+      Colors.amber,
+      Colors.lime,
+      Colors.lightGreen,
+      Colors.teal,
+      Colors.cyan,
+      Colors.blue,
+      Colors.indigo,
+      Colors.purple,
+      Colors.deepPurple,
     ],
   };
 
@@ -102,59 +132,79 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
               ),
               const SizedBox(height: 32),
               
-              // Avatar Selection
-              _buildSectionTitle('Choose Your Avatar'),
+              // Profile Picture Selection
+              _buildSectionTitle('Profile Picture'),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 100,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _availableAvatars.length,
-                  itemBuilder: (context, index) {
-                    final avatar = _availableAvatars[index];
-                    final isSelected = _selectedAvatar == avatar;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedAvatar = avatar;
-                        });
-                      },
+              Center(
+                child: Stack(
+                  children: [
+                    GestureDetector(
+                      onTap: _showImagePicker,
                       child: Container(
-                        margin: const EdgeInsets.only(right: 12),
+                        width: 120,
+                        height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          color: Colors.grey[900],
                           border: Border.all(
-                            color: isSelected ? rank.primaryColor : Colors.transparent,
+                            color: rank.primaryColor,
                             width: 3,
                           ),
                         ),
-                        child: CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.grey[800],
-                          child: Text(
-                            avatar[avatar.length - 1],
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        child: _selectedImage != null
+                            ? ClipOval(
+                                child: Image.file(
+                                  _selectedImage!,
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Icon(
+                                Icons.camera_alt,
+                                color: rank.primaryColor,
+                                size: 40,
+                              ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: rank.primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 18,
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap to ${_selectedImage == null ? 'add' : 'change'} photo',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
               
-              // DJ Name
-              _buildSectionTitle('Your DJ Name'),
+              // Raver Tag
+              _buildSectionTitle('Raver Tag'),
               const SizedBox(height: 12),
               TextField(
-                controller: _djNameController,
+                controller: _raverTagController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Enter your DJ name',
+                  hintText: 'Enter your raver tag',
                   hintStyle: TextStyle(color: Colors.grey[600]),
                   filled: true,
                   fillColor: Colors.grey[900],
@@ -167,6 +217,38 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
                     borderSide: BorderSide(color: rank.primaryColor, width: 2),
                   ),
                 ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Username
+              _buildSectionTitle('Username'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _usernameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Choose your @username',
+                  hintStyle: TextStyle(color: Colors.grey[600]),
+                  prefixText: '@',
+                  prefixStyle: TextStyle(
+                    color: rank.primaryColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: rank.primaryColor, width: 2),
+                  ),
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
+                ],
               ),
               const SizedBox(height: 32),
               
@@ -208,8 +290,18 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
               // Theme Color Selection
               _buildSectionTitle('Profile Theme Color'),
               const SizedBox(height: 16),
-              Row(
-                children: availableThemes.map((color) {
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 5,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1,
+                ),
+                itemCount: availableThemes.length,
+                itemBuilder: (context, index) {
+                  final color = availableThemes[index];
                   final isSelected = _selectedThemeColor == color;
                   return GestureDetector(
                     onTap: () {
@@ -218,23 +310,31 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
                       });
                     },
                     child: Container(
-                      margin: const EdgeInsets.only(right: 12),
-                      width: 50,
-                      height: 50,
                       decoration: BoxDecoration(
                         color: color,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? Colors.white : Colors.transparent,
-                          width: 3,
+                          color: isSelected ? Colors.white : Colors.grey[800]!,
+                          width: isSelected ? 3 : 1,
                         ),
+                        boxShadow: isSelected ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ] : [],
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white)
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 28,
+                            )
                           : null,
                     ),
                   );
-                }).toList(),
+                },
               ),
               const SizedBox(height: 48),
               
@@ -243,7 +343,9 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _djNameController.text.isNotEmpty && _selectedGenres.isNotEmpty
+                  onPressed: _raverTagController.text.isNotEmpty && 
+                             _usernameController.text.isNotEmpty && 
+                             _selectedGenres.isNotEmpty
                       ? () {
                           // Navigate to discovery dashboard with animation
                           Navigator.pushReplacement(
@@ -253,8 +355,9 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
                                 DiscoveryDashboard(
                                   userProfile: UserProfile(
                                     id: 'user_${DateTime.now().millisecondsSinceEpoch}',
-                                    djName: _djNameController.text,
-                                    avatarUrl: _selectedAvatar,
+                                    djName: _raverTagController.text,
+                                    username: '@${_usernameController.text}',
+                                    avatarUrl: _selectedImage?.path,
                                     currentRank: widget.selectedRank,
                                     totalPoints: 0,
                                     preferredGenres: _selectedGenres,
@@ -322,5 +425,126 @@ class _ProfileCustomizationScreenState extends State<ProfileCustomizationScreen>
         fontWeight: FontWeight.w600,
       ),
     );
+  }
+  
+  void _showImagePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        final rank = RankModel.getRankByType(widget.selectedRank);
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[700],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Text(
+                  'Choose Profile Picture',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildImageOption(
+                      icon: Icons.camera_alt,
+                      label: 'Camera',
+                      color: rank.primaryColor,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.camera);
+                      },
+                    ),
+                    _buildImageOption(
+                      icon: Icons.photo_library,
+                      label: 'Gallery',
+                      color: rank.primaryColor,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.gallery);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  Widget _buildImageOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+    }
   }
 }

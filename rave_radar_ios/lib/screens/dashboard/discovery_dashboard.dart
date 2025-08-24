@@ -113,7 +113,15 @@ class _DiscoveryDashboardState extends State<DiscoveryDashboard> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.userProfile.username,
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
@@ -560,6 +568,14 @@ class _DiscoveryDashboardState extends State<DiscoveryDashboard> {
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.userProfile.username,
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 16,
                   ),
                 ),
                 const SizedBox(height: 8),

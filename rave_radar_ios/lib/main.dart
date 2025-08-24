@@ -125,7 +125,7 @@ class RaverRankScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
-                  'Rave nigga or festival Legend?\nChoose your rank.',
+                  'Rave Rookie or Festival Legend?\nChoose your rank.',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 26,
@@ -143,7 +143,7 @@ class RaverRankScreen extends StatelessWidget {
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) => 
-                            ProfileCustomizationScreen(selectedRank: RankType.raveInitiate),
+                            const ProfileCustomizationScreen(selectedRank: RankType.raveInitiate),
                           transitionsBuilder: (context, animation, secondaryAnimation, child) {
                             const begin = Offset(1.0, 0.0);
                             const end = Offset.zero;
@@ -186,7 +186,7 @@ class RaverRankScreen extends StatelessWidget {
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) => 
-                            ProfileCustomizationScreen(selectedRank: RankType.raveRegular),
+                            const ProfileCustomizationScreen(selectedRank: RankType.raveRegular),
                           transitionsBuilder: (context, animation, secondaryAnimation, child) {
                             const begin = Offset(1.0, 0.0);
                             const end = Offset.zero;
@@ -229,7 +229,7 @@ class RaverRankScreen extends StatelessWidget {
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) => 
-                            ProfileCustomizationScreen(selectedRank: RankType.raveVeteran),
+                            const ProfileCustomizationScreen(selectedRank: RankType.raveVeteran),
                           transitionsBuilder: (context, animation, secondaryAnimation, child) {
                             const begin = Offset(1.0, 0.0);
                             const end = Offset.zero;
