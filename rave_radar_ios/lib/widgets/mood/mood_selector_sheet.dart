@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/mood_model.dart';
 import '../../utils/constants.dart';
-import 'mood_visual_effects.dart';
+import '../common/success_notification.dart';
 
 class MoodSelectorSheet extends StatefulWidget {
   final Function(MoodType, LocationTag?, EventTag?) onMoodSelected;
@@ -810,12 +810,29 @@ class _MoodSelectorSheetState extends State<MoodSelectorSheet> {
           ElevatedButton(
             onPressed: canPost
                 ? () {
+                    // Show success notification
+                    SuccessNotification.show(
+                      context: context,
+                      title: 'Mood Posted! ${_selectedMood!.emoji}',
+                      subtitle: 'Active for 24 hours',
+                      backgroundColor: _selectedMood!.color,
+                      emoji: _selectedMood!.emoji,
+                      duration: const Duration(seconds: 2),
+                    );
+                    
+                    // Call callback
                     widget.onMoodSelected(
                       _selectedMood!,
                       _selectedLocation,
                       _selectedEvent,
                     );
-                    Navigator.pop(context);
+                    
+                    // Delay navigation to allow notification to show
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    });
                   }
                 : null,
             style: ElevatedButton.styleFrom(

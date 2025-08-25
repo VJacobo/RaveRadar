@@ -253,12 +253,36 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         break;
       case 'Text':
         // TODO: Show text post creator
+        SuccessNotification.show(
+          context: context,
+          title: 'Text Post Feature Coming Soon!',
+          subtitle: 'Share your thoughts and stories',
+          backgroundColor: Colors.blue,
+          icon: Icons.edit,
+          duration: const Duration(seconds: 2),
+        );
         break;
       case 'Photo':
         // TODO: Show photo picker
+        SuccessNotification.show(
+          context: context,
+          title: 'Photo Post Feature Coming Soon!',
+          subtitle: 'Share your rave memories',
+          backgroundColor: Colors.purple,
+          icon: Icons.camera_alt,
+          duration: const Duration(seconds: 2),
+        );
         break;
       case 'Track':
         // TODO: Show track selector
+        SuccessNotification.show(
+          context: context,
+          title: 'Track Share Feature Coming Soon!',
+          subtitle: 'Share your favorite tracks',
+          backgroundColor: Colors.green,
+          icon: Icons.music_note,
+          duration: const Duration(seconds: 2),
+        );
         break;
       case 'Event':
         _showEventCreator();

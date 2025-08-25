@@ -3,6 +3,7 @@ import '../../models/location_model.dart';
 import '../../utils/constants.dart';
 import '../../widgets/common/rave_text_field.dart';
 import '../../widgets/common/rave_button.dart';
+import '../../widgets/common/success_notification.dart';
 
 class CreateLocationScreen extends StatefulWidget {
   final Function(LocationModel)? onLocationCreated;
@@ -165,8 +166,25 @@ class _CreateLocationScreenState extends State<CreateLocationScreen> {
         taggedUsers: _taggedUsers,
       );
 
+      // Show success notification
+      SuccessNotification.show(
+        context: context,
+        title: 'Location Added Successfully! 📍',
+        subtitle: '${location.name} in ${location.city}',
+        backgroundColor: location.typeColor,
+        icon: location.typeIcon,
+        duration: const Duration(seconds: 2),
+      );
+      
+      // Call callback and navigate back
       widget.onLocationCreated?.call(location);
-      Navigator.pop(context, location);
+      
+      // Delay navigation to allow notification to show
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (context.mounted) {
+          Navigator.pop(context, location);
+        }
+      });
     }
   }
 

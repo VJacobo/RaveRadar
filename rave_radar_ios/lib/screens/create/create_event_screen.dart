@@ -3,6 +3,7 @@ import '../../models/event_model.dart';
 import '../../utils/constants.dart';
 import '../../widgets/common/rave_text_field.dart';
 import '../../widgets/common/rave_button.dart';
+import '../../widgets/common/success_notification.dart';
 
 class CreateEventScreen extends StatefulWidget {
   final Function(EventModel)? onEventCreated;
@@ -162,8 +163,25 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         genres: _genres,
       );
 
+      // Show success notification
+      SuccessNotification.show(
+        context: context,
+        title: 'Event Created Successfully! 🎉',
+        subtitle: '${event.name} at ${event.venue}',
+        backgroundColor: event.typeColor,
+        icon: event.typeIcon,
+        duration: const Duration(seconds: 2),
+      );
+      
+      // Call callback and navigate back
       widget.onEventCreated?.call(event);
-      Navigator.pop(context, event);
+      
+      // Delay navigation to allow notification to show
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (context.mounted) {
+          Navigator.pop(context, event);
+        }
+      });
     }
   }
 
