@@ -141,6 +141,9 @@ class _CreateLocationScreenState extends State<CreateLocationScreen> {
 
   void _createLocation() {
     if (_formKey.currentState!.validate()) {
+      // Dismiss keyboard first
+      FocusScope.of(context).unfocus();
+      
       final location = LocationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
@@ -166,25 +169,11 @@ class _CreateLocationScreenState extends State<CreateLocationScreen> {
         taggedUsers: _taggedUsers,
       );
 
-      // Show success notification
-      SuccessNotification.show(
-        context: context,
-        title: 'Location Added Successfully! 📍',
-        subtitle: '${location.name} in ${location.city}',
-        backgroundColor: location.typeColor,
-        icon: location.typeIcon,
-        duration: const Duration(seconds: 2),
-      );
-      
-      // Call callback and navigate back
+      // Call callback first
       widget.onLocationCreated?.call(location);
       
-      // Delay navigation to allow notification to show
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (context.mounted) {
-          Navigator.pop(context, location);
-        }
-      });
+      // Navigate back immediately (notification will show on parent screen)
+      Navigator.pop(context, location);
     }
   }
 

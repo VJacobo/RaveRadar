@@ -810,29 +810,15 @@ class _MoodSelectorSheetState extends State<MoodSelectorSheet> {
           ElevatedButton(
             onPressed: canPost
                 ? () {
-                    // Show success notification
-                    SuccessNotification.show(
-                      context: context,
-                      title: 'Mood Posted! ${_selectedMood!.emoji}',
-                      subtitle: 'Active for 24 hours',
-                      backgroundColor: _selectedMood!.color,
-                      emoji: _selectedMood!.emoji,
-                      duration: const Duration(seconds: 2),
-                    );
+                    // Dismiss keyboard first
+                    FocusScope.of(context).unfocus();
                     
-                    // Call callback
+                    // Call callback (this will pop with the data)
                     widget.onMoodSelected(
                       _selectedMood!,
                       _selectedLocation,
                       _selectedEvent,
                     );
-                    
-                    // Delay navigation to allow notification to show
-                    Future.delayed(const Duration(milliseconds: 300), () {
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
-                    });
                   }
                 : null,
             style: ElevatedButton.styleFrom(

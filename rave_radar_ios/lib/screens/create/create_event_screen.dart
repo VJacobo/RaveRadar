@@ -135,6 +135,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   void _createEvent() {
     if (_formKey.currentState!.validate()) {
+      // Dismiss keyboard first
+      FocusScope.of(context).unfocus();
+      
       final artists = _artistsController.text
           .split(',')
           .map((e) => e.trim())
@@ -163,25 +166,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         genres: _genres,
       );
 
-      // Show success notification
-      SuccessNotification.show(
-        context: context,
-        title: 'Event Created Successfully! 🎉',
-        subtitle: '${event.name} at ${event.venue}',
-        backgroundColor: event.typeColor,
-        icon: event.typeIcon,
-        duration: const Duration(seconds: 2),
-      );
-      
-      // Call callback and navigate back
+      // Call callback first
       widget.onEventCreated?.call(event);
       
-      // Delay navigation to allow notification to show
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (context.mounted) {
-          Navigator.pop(context, event);
-        }
-      });
+      // Navigate back immediately (notification will show on parent screen)
+      Navigator.pop(context, event);
     }
   }
 

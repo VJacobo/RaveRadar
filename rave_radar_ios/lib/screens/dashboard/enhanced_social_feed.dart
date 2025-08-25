@@ -8,15 +8,18 @@ import '../../blocs/feed/feed_event.dart';
 import '../../blocs/feed/feed_state.dart';
 import '../../models/rank_model.dart' as rank_model;
 import '../../models/post_model.dart';
+import '../../models/event_model.dart';
+import '../../models/location_model.dart';
 import '../../utils/constants.dart';
 import '../events/enhanced_events_tab.dart';
 import '../profile/enhanced_profile_tab.dart';
 import '../../widgets/mood/mood_selector_sheet.dart';
+import '../../models/mood_model.dart' as mood_model;
 import '../../services/mood_service.dart';
 import '../create/create_event_screen.dart';
 import '../create/create_location_screen.dart';
 import '../search/search_screen.dart';
-import '../../widgets/common/success_notification.dart';
+import '../../widgets/common/toast_notification.dart';
 
 class EnhancedSocialFeed extends StatefulWidget {
   final rank_model.UserProfile userProfile;
@@ -39,6 +42,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   final ScrollController _feedScrollController = ScrollController();
   Timer? _scrollEndTimer;
   final MoodService _moodService = MoodService();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   
   @override
   void initState() {
@@ -145,28 +149,31 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => _feedBloc,
-      child: Scaffold(
-        backgroundColor: AppColors.backgroundPrimary,
-        body: SafeArea(
-          child: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              _buildFeedTab(),
-              _buildEventsTab(),
-              _buildConnectTab(),
-              _buildProfileTab(),
-            ],
+      child: ScaffoldMessenger(
+        key: _scaffoldMessengerKey,
+        child: Scaffold(
+          backgroundColor: AppColors.backgroundPrimary,
+          body: SafeArea(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildFeedTab(),
+                _buildEventsTab(),
+                _buildConnectTab(),
+                _buildProfileTab(),
+              ],
+            ),
           ),
-        ),
-        floatingActionButton: _selectedIndex == 0 ? _buildFloatingActionButton() : null,
-        bottomNavigationBar: AnimatedBuilder(
-          animation: _tabBarAnimation,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(0, 100 * (1 - _tabBarAnimation.value)),
-              child: _buildBottomNavBar(),
-            );
-          },
+          floatingActionButton: _selectedIndex == 0 ? _buildFloatingActionButton() : null,
+          bottomNavigationBar: AnimatedBuilder(
+            animation: _tabBarAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, 100 * (1 - _tabBarAnimation.value)),
+                child: _buildBottomNavBar(),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -253,10 +260,10 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         break;
       case 'Text':
         // TODO: Show text post creator
-        SuccessNotification.show(
+        ToastNotification.show(
           context: context,
-          title: 'Text Post Feature Coming Soon!',
-          subtitle: 'Share your thoughts and stories',
+          title: 'Text Post Coming Soon!',
+          subtitle: 'Share your thoughts',
           backgroundColor: Colors.blue,
           icon: Icons.edit,
           duration: const Duration(seconds: 2),
@@ -264,10 +271,10 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         break;
       case 'Photo':
         // TODO: Show photo picker
-        SuccessNotification.show(
+        ToastNotification.show(
           context: context,
-          title: 'Photo Post Feature Coming Soon!',
-          subtitle: 'Share your rave memories',
+          title: 'Photo Post Coming Soon!',
+          subtitle: 'Share your memories',
           backgroundColor: Colors.purple,
           icon: Icons.camera_alt,
           duration: const Duration(seconds: 2),
@@ -275,10 +282,10 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         break;
       case 'Track':
         // TODO: Show track selector
-        SuccessNotification.show(
+        ToastNotification.show(
           context: context,
-          title: 'Track Share Feature Coming Soon!',
-          subtitle: 'Share your favorite tracks',
+          title: 'Track Share Coming Soon!',
+          subtitle: 'Share your tracks',
           backgroundColor: Colors.green,
           icon: Icons.music_note,
           duration: const Duration(seconds: 2),
@@ -293,92 +300,106 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
     }
   }
   
-  void _showMoodSelector() {
-    showModalBottomSheet(
+  void _showMoodSelector() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => MoodSelectorSheet(
         onMoodSelected: (mood, location, event) {
-          _moodService.postMood(
-            userId: widget.userProfile.id,
-            userName: widget.userProfile.djName,
-            userAvatar: widget.userProfile.avatarUrl ?? '',
-            mood: mood,
-            location: location,
-            event: event,
-          );
-          
-          // Show enhanced success notification
-          SuccessNotification.show(
-            context: context,
-            title: 'Mood Posted Successfully!',
-            subtitle: '${mood.label} - Active for 24 hours',
-            backgroundColor: mood.color,
-            emoji: mood.emoji,
-            actionLabel: 'UNDO',
-            onActionPressed: () {
-              // TODO: Implement undo mood post
-            },
-          );
-          
-          // Refresh feed
-          _feedBloc.add(RefreshFeed());
+          // Pass the data back to the parent
+          Navigator.pop(context, {
+            'mood': mood,
+            'location': location,
+            'event': event,
+          });
         },
       ),
     );
+    
+    // Handle the result after modal is closed
+    if (result != null && mounted) {
+      final mood = result['mood'] as mood_model.MoodType;
+      final location = result['location'] as mood_model.LocationTag?;
+      final event = result['event'] as mood_model.EventTag?;
+      
+      _moodService.postMood(
+        userId: widget.userProfile.id,
+        userName: widget.userProfile.djName,
+        userAvatar: widget.userProfile.avatarUrl ?? '',
+        mood: mood,
+        location: location,
+        event: event,
+      );
+      
+      // Show notification in the main context after modal is closed
+      if (mounted) {
+        ToastNotification.show(
+          context: context,
+          title: 'Mood Posted Successfully!',
+          subtitle: '${mood.label} - Active for 24 hours',
+          backgroundColor: mood.color,
+          emoji: mood.emoji,
+        );
+      }
+      
+      // Refresh feed
+      _feedBloc.add(RefreshFeed());
+    }
   }
 
-  void _showEventCreator() {
-    Navigator.push(
+  void _showEventCreator() async {
+    final event = await Navigator.push<EventModel>(
       context,
       MaterialPageRoute(
         builder: (context) => CreateEventScreen(
           onEventCreated: (event) {
-            _feedBloc.add(RefreshFeed());
-            
-            // Show detailed success notification with animation
-            SuccessNotification.show(
-              context: context,
-              title: 'Event Posted Successfully! 🎉',
-              subtitle: '${event.name} at ${event.venue}',
-              backgroundColor: event.typeColor,
-              icon: event.typeIcon,
-              actionLabel: 'VIEW',
-              onActionPressed: () {
-                // TODO: Navigate to event details
-              },
-            );
+            // Just pass the event back
           },
         ),
       ),
     );
+    
+    // Handle the result after screen is closed
+    if (event != null && mounted) {
+      _feedBloc.add(RefreshFeed());
+      
+      // Show notification in the main context
+      ToastNotification.show(
+        context: context,
+        title: 'Event Posted Successfully! 🎉',
+        subtitle: '${event.name} at ${event.venue}',
+        backgroundColor: event.typeColor,
+        icon: event.typeIcon,
+      );
+    }
   }
 
-  void _showLocationCreator() {
-    Navigator.push(
+  void _showLocationCreator() async {
+    final location = await Navigator.push<LocationModel>(
       context,
       MaterialPageRoute(
         builder: (context) => CreateLocationScreen(
           onLocationCreated: (location) {
-            _feedBloc.add(RefreshFeed());
-            
-            // Show detailed success notification with animation
-            SuccessNotification.show(
-              context: context,
-              title: 'Location Added Successfully! 📍',
-              subtitle: '${location.name} in ${location.city}',
-              backgroundColor: location.typeColor,
-              icon: location.typeIcon,
-              actionLabel: 'VIEW',
-              onActionPressed: () {
-                // TODO: Navigate to location details
-              },
-            );
+            // Just pass the location back
           },
         ),
       ),
     );
+    
+    // Handle the result after screen is closed
+    if (location != null && mounted) {
+      _feedBloc.add(RefreshFeed());
+      
+      // Show notification in the main context
+      ToastNotification.show(
+        context: context,
+        title: 'Location Added Successfully! 📍',
+        subtitle: '${location.name} in ${location.city}',
+        backgroundColor: location.typeColor,
+        icon: location.typeIcon,
+      );
+    }
   }
   
   Widget _buildFeedTab() {
