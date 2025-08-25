@@ -12,8 +12,10 @@ import '../../utils/constants.dart';
 import '../events/enhanced_events_tab.dart';
 import '../profile/enhanced_profile_tab.dart';
 import '../../widgets/mood/mood_selector_sheet.dart';
-import '../../models/mood_model.dart' as mood_model;
 import '../../services/mood_service.dart';
+import '../create/create_event_screen.dart';
+import '../create/create_location_screen.dart';
+import '../search/search_screen.dart';
 
 class EnhancedSocialFeed extends StatefulWidget {
   final rank_model.UserProfile userProfile;
@@ -202,6 +204,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
       ('Photo', Icons.camera_alt, Colors.purple),
       ('Track', Icons.music_note, Colors.green),
       ('Event', Icons.event, Colors.orange),
+      ('Location', Icons.place, Colors.teal),
     ];
     
     return options.map((option) {
@@ -257,7 +260,10 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
         // TODO: Show track selector
         break;
       case 'Event':
-        // TODO: Show event creator
+        _showEventCreator();
+        break;
+      case 'Location':
+        _showLocationCreator();
         break;
     }
   }
@@ -295,6 +301,44 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
           // Refresh feed
           _feedBloc.add(RefreshFeed());
         },
+      ),
+    );
+  }
+
+  void _showEventCreator() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateEventScreen(
+          onEventCreated: (event) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Event created successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            _feedBloc.add(RefreshFeed());
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showLocationCreator() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateLocationScreen(
+          onLocationCreated: (location) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location added successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            _feedBloc.add(RefreshFeed());
+          },
+        ),
       ),
     );
   }
@@ -923,8 +967,57 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   }
   
   Widget _buildConnectTab() {
-    return const Center(
-      child: Text('Connect', style: AppTextStyles.headline2),
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Connect', style: AppTextStyles.headline2),
+          const SizedBox(height: AppSpacing.xl),
+          
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
+              );
+            },
+            icon: const Icon(Icons.search, color: Colors.white),
+            label: const Text('Search Events & Locations', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.userProfile.rank.primaryColor,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+                vertical: AppSpacing.md,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
+              );
+            },
+            icon: const Icon(Icons.people, color: AppColors.textPrimary),
+            label: const Text('Find Friends', style: TextStyle(color: AppColors.textPrimary)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl,
+                vertical: AppSpacing.md,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
   

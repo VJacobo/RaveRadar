@@ -18,11 +18,18 @@ class CreatePostMenu extends StatelessWidget {
       alignment: Alignment.bottomRight,
       children: [
         _buildMenuItem(
-          index: 4,
+          index: 5,
           icon: Icons.location_on,
           label: 'Location',
           color: Colors.orange,
           onTap: () => onPostTypeSelected(PostType.location),
+        ),
+        _buildMenuItem(
+          index: 4,
+          icon: Icons.event,
+          label: 'Event',
+          color: Colors.teal,
+          onTap: () => onPostTypeSelected(PostType.event),
         ),
         _buildMenuItem(
           index: 3,
