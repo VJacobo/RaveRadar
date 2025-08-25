@@ -16,6 +16,7 @@ import '../../services/mood_service.dart';
 import '../create/create_event_screen.dart';
 import '../create/create_location_screen.dart';
 import '../search/search_screen.dart';
+import '../../widgets/common/success_notification.dart';
 
 class EnhancedSocialFeed extends StatefulWidget {
   final rank_model.UserProfile userProfile;
@@ -284,18 +285,17 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
             event: event,
           );
           
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Text('${mood.emoji} '),
-                  Text('Mood posted for 24 hours!'),
-                ],
-              ),
-              backgroundColor: mood.color,
-              behavior: SnackBarBehavior.floating,
-            ),
+          // Show enhanced success notification
+          SuccessNotification.show(
+            context: context,
+            title: 'Mood Posted Successfully!',
+            subtitle: '${mood.label} - Active for 24 hours',
+            backgroundColor: mood.color,
+            emoji: mood.emoji,
+            actionLabel: 'UNDO',
+            onActionPressed: () {
+              // TODO: Implement undo mood post
+            },
           );
           
           // Refresh feed
@@ -311,13 +311,20 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
       MaterialPageRoute(
         builder: (context) => CreateEventScreen(
           onEventCreated: (event) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Event created successfully!'),
-                backgroundColor: Colors.green,
-              ),
-            );
             _feedBloc.add(RefreshFeed());
+            
+            // Show detailed success notification with animation
+            SuccessNotification.show(
+              context: context,
+              title: 'Event Posted Successfully! 🎉',
+              subtitle: '${event.name} at ${event.venue}',
+              backgroundColor: event.typeColor,
+              icon: event.typeIcon,
+              actionLabel: 'VIEW',
+              onActionPressed: () {
+                // TODO: Navigate to event details
+              },
+            );
           },
         ),
       ),
@@ -330,13 +337,20 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
       MaterialPageRoute(
         builder: (context) => CreateLocationScreen(
           onLocationCreated: (location) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Location added successfully!'),
-                backgroundColor: Colors.green,
-              ),
-            );
             _feedBloc.add(RefreshFeed());
+            
+            // Show detailed success notification with animation
+            SuccessNotification.show(
+              context: context,
+              title: 'Location Added Successfully! 📍',
+              subtitle: '${location.name} in ${location.city}',
+              backgroundColor: location.typeColor,
+              icon: location.typeIcon,
+              actionLabel: 'VIEW',
+              onActionPressed: () {
+                // TODO: Navigate to location details
+              },
+            );
           },
         ),
       ),
