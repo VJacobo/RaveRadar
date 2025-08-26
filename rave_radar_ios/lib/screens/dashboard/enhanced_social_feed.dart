@@ -11,7 +11,7 @@ import '../../models/post_model.dart';
 import '../../models/event_model.dart';
 import '../../models/location_model.dart';
 import '../../utils/constants.dart';
-import '../events/enhanced_events_tab.dart';
+import '../events/events_discovery_screen.dart';
 import '../profile/enhanced_profile_tab.dart';
 import '../../widgets/mood/mood_selector_sheet.dart';
 import '../../models/mood_model.dart' as mood_model;
@@ -1019,10 +1019,7 @@ class _EnhancedSocialFeedState extends State<EnhancedSocialFeed> with TickerProv
   }
   
   Widget _buildEventsTab() {
-    return EnhancedEventsTab(
-      userProfile: widget.userProfile,
-      onScrollDirectionChanged: _handleScrollDirection,
-    );
+    return const EventsDiscoveryScreen();
   }
   
   Widget _buildConnectTab() {

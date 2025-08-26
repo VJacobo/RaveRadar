@@ -29,6 +29,7 @@ class ProfileSong {
   final String? albumArt;
   final MusicSource source;
   final String sourceUrl;
+  final String? previewUrl; // Spotify preview URL
   final Duration previewDuration;
   final bool hasFullTrack;
   final DateTime addedAt;
@@ -42,6 +43,7 @@ class ProfileSong {
     this.albumArt,
     required this.source,
     required this.sourceUrl,
+    this.previewUrl,
     this.previewDuration = const Duration(seconds: 30),
     this.hasFullTrack = false,
     required this.addedAt,
@@ -63,6 +65,7 @@ class ProfileSong {
     String? albumArt,
     MusicSource? source,
     String? sourceUrl,
+    String? previewUrl,
     Duration? previewDuration,
     bool? hasFullTrack,
     DateTime? addedAt,
@@ -76,6 +79,7 @@ class ProfileSong {
       albumArt: albumArt ?? this.albumArt,
       source: source ?? this.source,
       sourceUrl: sourceUrl ?? this.sourceUrl,
+      previewUrl: previewUrl ?? this.previewUrl,
       previewDuration: previewDuration ?? this.previewDuration,
       hasFullTrack: hasFullTrack ?? this.hasFullTrack,
       addedAt: addedAt ?? this.addedAt,

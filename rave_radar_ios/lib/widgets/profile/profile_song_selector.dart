@@ -168,22 +168,39 @@ class _ProfileSongSelectorState extends State<ProfileSongSelector> {
   }
 
   Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: TextField(
-        controller: _searchController,
-        onChanged: _searchSongs,
-        decoration: InputDecoration(
-          hintText: 'Search for a track...',
-          prefixIcon: const Icon(Icons.search),
-          filled: true,
-          fillColor: AppColors.backgroundTertiary,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: BorderSide.none,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          child: TextField(
+            controller: _searchController,
+            onChanged: _searchSongs,
+            decoration: InputDecoration(
+              hintText: 'Search Spotify for tracks...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: Icon(
+                Icons.music_note,
+                color: Colors.green,
+                size: 20,
+              ),
+              filled: true,
+              fillColor: AppColors.backgroundTertiary,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: BorderSide.none,
+              ),
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Searches real Spotify tracks with 30-second previews',
+          style: AppTextStyles.caption.copyWith(
+            color: Colors.green,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 
@@ -253,23 +270,32 @@ class _ProfileSongSelectorState extends State<ProfileSongSelector> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      '${song.previewDuration.inSeconds}s preview',
-                      style: AppTextStyles.caption.copyWith(fontSize: 10),
-                    ),
-                    if (song.hasFullTrack) ...[
-                      const SizedBox(width: AppSpacing.xs),
+                    if (song.previewUrl != null) ...[
                       Icon(
-                        Icons.check_circle,
+                        Icons.play_circle_filled,
                         size: 12,
                         color: Colors.green,
                       ),
                       const SizedBox(width: 2),
                       Text(
-                        'Full',
+                        '30s preview',
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.green,
+                        ),
+                      ),
+                    ] else ...[
+                      Icon(
+                        Icons.music_off,
+                        size: 12,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        'No preview',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.orange,
                         ),
                       ),
                     ],

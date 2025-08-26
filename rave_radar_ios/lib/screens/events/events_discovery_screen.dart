@@ -3,6 +3,7 @@ import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/events/event_card.dart';
+import '../../widgets/events/event_search_bar.dart';
 import '../../utils/error_handler.dart';
 
 class EventsDiscoveryScreen extends StatefulWidget {
@@ -15,20 +16,8 @@ class EventsDiscoveryScreen extends StatefulWidget {
 class _EventsDiscoveryScreenState extends State<EventsDiscoveryScreen> {
   final EventService _eventService = EventService();
   EventType? _selectedType;
-  String _selectedLocation = 'All Locations';
-  final List<String> _locations = [
-    'All Locations',
-    'Miami, FL',
-    'New York, NY',
-    'Los Angeles, CA',
-    'Chicago, IL',
-    'Las Vegas, NV',
-    'San Francisco, CA',
-    'Brooklyn, NY',
-    'Detroit, MI',
-    'Austin, TX',
-    'Seattle, WA',
-  ];
+  String _searchQuery = '';
+  EventSearchFilters _searchFilters = EventSearchFilters();
 
   @override
   void initState() {
@@ -37,10 +26,108 @@ class _EventsDiscoveryScreenState extends State<EventsDiscoveryScreen> {
   }
 
   List<EventModel> get _filteredEvents {
-    return _eventService.getUpcomingEvents(
-      type: _selectedType,
-      location: _selectedLocation == 'All Locations' ? null : _selectedLocation.split(',')[0],
-    );
+    // Start with all events or filtered by type
+    var events = _eventService.getUpcomingEvents(type: _selectedType);
+    
+    // Apply search query
+    if (_searchQuery.isNotEmpty) {
+      final searchLower = _searchQuery.toLowerCase();
+      events = events.where((event) {
+        return event.name.toLowerCase().contains(searchLower) ||
+               event.venue.toLowerCase().contains(searchLower) ||
+               event.artists.any((artist) => artist.toLowerCase().contains(searchLower)) ||
+               event.location.toLowerCase().contains(searchLower);
+      }).toList();
+    }
+    
+    // Apply location filter
+    if (_searchFilters.location != null && _searchFilters.location!.isNotEmpty) {
+      final location = _searchFilters.location!.toLowerCase();
+      events = events.where((event) {
+        return event.location.toLowerCase().contains(location) ||
+               event.venue.toLowerCase().contains(location) ||
+               event.name.toLowerCase().contains(location);
+      }).toList();
+    }
+    
+    // Apply date range filter
+    if (_searchFilters.dateRange != null) {
+      final now = DateTime.now();
+      events = events.where((event) {
+        switch (_searchFilters.dateRange!) {
+          case DateRangeOption.today:
+            return event.startTime.day == now.day && 
+                   event.startTime.month == now.month && 
+                   event.startTime.year == now.year;
+          case DateRangeOption.tomorrow:
+            final tomorrow = now.add(const Duration(days: 1));
+            return event.startTime.day == tomorrow.day && 
+                   event.startTime.month == tomorrow.month && 
+                   event.startTime.year == tomorrow.year;
+          case DateRangeOption.thisWeek:
+            final endOfWeek = now.add(Duration(days: 7 - now.weekday));
+            return event.startTime.isBefore(endOfWeek) && event.startTime.isAfter(now.subtract(const Duration(days: 1)));
+          case DateRangeOption.thisWeekend:
+            final saturday = now.add(Duration(days: DateTime.saturday - now.weekday));
+            final sunday = saturday.add(const Duration(days: 1));
+            return (event.startTime.day == saturday.day || event.startTime.day == sunday.day);
+          case DateRangeOption.thisMonth:
+            return event.startTime.month == now.month && event.startTime.year == now.year;
+          case DateRangeOption.nextWeek:
+            final nextWeekStart = now.add(Duration(days: 7 - now.weekday + 1));
+            final nextWeekEnd = nextWeekStart.add(const Duration(days: 6));
+            return event.startTime.isAfter(nextWeekStart.subtract(const Duration(days: 1))) && 
+                   event.startTime.isBefore(nextWeekEnd.add(const Duration(days: 1)));
+          case DateRangeOption.nextMonth:
+            final nextMonth = DateTime(now.year, now.month + 1);
+            return event.startTime.month == nextMonth.month && event.startTime.year == nextMonth.year;
+          case DateRangeOption.custom:
+            return true; // Would need date picker implementation
+        }
+      }).toList();
+    }
+    
+    // Apply price filter
+    if (_searchFilters.priceRange != null) {
+      events = events.where((event) {
+        final price = event.price ?? 0;
+        switch (_searchFilters.priceRange!) {
+          case PriceRangeOption.free:
+            return price == 0;
+          case PriceRangeOption.under25:
+            return price > 0 && price < 25;
+          case PriceRangeOption.under50:
+            return price >= 25 && price < 50;
+          case PriceRangeOption.under100:
+            return price >= 50 && price < 100;
+          case PriceRangeOption.over100:
+            return price >= 100;
+        }
+      }).toList();
+    }
+    
+    // Apply genre filter
+    if (_searchFilters.genres.isNotEmpty) {
+      events = events.where((event) {
+        // Check if any event genre/artist/description matches selected genres
+        return _searchFilters.genres.any((genre) {
+          final genreLower = genre.toLowerCase();
+          return event.name.toLowerCase().contains(genreLower) ||
+                 event.description?.toLowerCase().contains(genreLower) == true ||
+                 event.artists.any((artist) => artist.toLowerCase().contains(genreLower)) ||
+                 event.genres.any((g) => g.toLowerCase().contains(genreLower));
+        });
+      }).toList();
+    }
+    
+    return events;
+  }
+
+  void _handleSearch(String query, EventSearchFilters filters) {
+    setState(() {
+      _searchQuery = query;
+      _searchFilters = filters;
+    });
   }
 
   void _handleEventTap(EventModel event) {
@@ -239,12 +326,6 @@ class _EventsDiscoveryScreenState extends State<EventsDiscoveryScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: AppColors.textPrimary),
-            onPressed: () {
-              ErrorHandler.showSuccess(context, 'Search coming soon!');
-            },
-          ),
-          IconButton(
             icon: Icon(Icons.map_outlined, color: AppColors.textPrimary),
             onPressed: () {
               ErrorHandler.showSuccess(context, 'Map view coming soon!');
@@ -254,67 +335,57 @@ class _EventsDiscoveryScreenState extends State<EventsDiscoveryScreen> {
       ),
       body: Column(
         children: [
-          // Filters
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-            child: Column(
-              children: [
-                // Event Type Filter
-                SizedBox(
-                  height: 40,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    children: [
-                      _buildTypeChip(null, 'All Events'),
-                      ...EventType.values.map((type) => _buildTypeChip(type, type.name)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                // Location Filter
-                Container(
-                  height: 40,
-                  margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundSecondary,
-                    borderRadius: BorderRadius.circular(AppRadius.rounded),
-                    border: Border.all(
-                      color: AppColors.backgroundTertiary,
+          // Search Bar
+          EventSearchBar(
+            onSearch: _handleSearch,
+            onShowFilters: () {},
+          ),
+          // Show active location filter if set
+          if (_searchFilters.location != null && _searchFilters.location!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Row(
+                children: [
+                  Icon(Icons.location_on, size: 16, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'Showing events in: ${_searchFilters.location}',
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  child: DropdownButton<String>(
-                    value: _selectedLocation,
-                    isExpanded: true,
-                    underline: const SizedBox.shrink(),
-                    dropdownColor: AppColors.backgroundSecondary,
-                    icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-                    style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary),
-                    onChanged: (value) {
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
                       setState(() {
-                        _selectedLocation = value!;
+                        _searchFilters.location = null;
                       });
+                      _handleSearch(_searchQuery, _searchFilters);
                     },
-                    items: _locations.map((location) {
-                      return DropdownMenuItem(
-                        value: location,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 16,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Text(location),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Theme.of(context).primaryColor,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+          // Event Type Filter (kept for quick access)
+          Container(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                children: [
+                  _buildTypeChip(null, 'All Events'),
+                  ...EventType.values.map((type) => _buildTypeChip(type, type.name)),
+                ],
+              ),
             ),
           ),
           // Events List

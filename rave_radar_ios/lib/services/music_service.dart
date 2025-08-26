@@ -1,10 +1,15 @@
 import '../models/profile_song_model.dart';
+import 'spotify_service.dart';
+import 'audio_player_service.dart';
 
 class MusicService {
   static final MusicService _instance = MusicService._internal();
   factory MusicService() => _instance;
+  
+  final SpotifyService _spotifyService = SpotifyService();
+  final AudioPlayerService _audioPlayerService = AudioPlayerService();
 
-  // Mock techno tracks for demo
+  // Mock techno tracks for demo - using free sample audio URLs for testing
   final List<ProfileSong> _availableTracks = [
     ProfileSong(
       id: '1',
@@ -13,8 +18,9 @@ class MusicService {
       albumArt: 'https://images.unsplash.com/photo-1571266028243-d220c6a8d7e7',
       source: MusicSource.spotify,
       sourceUrl: 'spotify:track:1234567890',
+      previewUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Free sample for testing
       previewDuration: const Duration(seconds: 30),
-      hasFullTrack: false,
+      hasFullTrack: true,
       addedAt: DateTime.now(),
     ),
     ProfileSong(
@@ -118,16 +124,80 @@ class MusicService {
     return _availableTracks;
   }
 
-  // Search tracks
+  // Search tracks using Spotify API
   Future<List<ProfileSong>> searchTracks(String query) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    final lowercaseQuery = query.toLowerCase();
-    return _availableTracks.where((track) =>
-      track.title.toLowerCase().contains(lowercaseQuery) ||
-      track.artist.toLowerCase().contains(lowercaseQuery)
-    ).toList();
+    try {
+      // Search Spotify for tracks
+      final spotifyTracks = await _spotifyService.searchTracks(query);
+      
+      // Convert Spotify tracks to ProfileSongs
+      return spotifyTracks.map((track) => ProfileSong(
+        id: track.id,
+        title: track.name,
+        artist: track.artist,
+        albumArt: track.albumArt,
+        source: MusicSource.spotify,
+        sourceUrl: track.spotifyUrl ?? '',
+        previewUrl: track.previewUrl,
+        previewDuration: const Duration(seconds: 30),
+        hasFullTrack: track.previewUrl != null,
+        addedAt: DateTime.now(),
+      )).toList();
+    } catch (e) {
+      print('Error searching Spotify: $e');
+      // Fallback to local search
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      final lowercaseQuery = query.toLowerCase();
+      return _availableTracks.where((track) =>
+        track.title.toLowerCase().contains(lowercaseQuery) ||
+        track.artist.toLowerCase().contains(lowercaseQuery)
+      ).toList();
+    }
   }
+  
+  // Play a track preview
+  Future<bool> playTrackPreview(ProfileSong song) async {
+    if (song.previewUrl == null) {
+      print('No preview URL available');
+      return false;
+    }
+    
+    // Convert ProfileSong to SpotifyTrack for audio player
+    final spotifyTrack = SpotifyTrack(
+      id: song.id,
+      name: song.title,
+      artist: song.artist,
+      albumArt: song.albumArt,
+      previewUrl: song.previewUrl,
+      durationMs: song.previewDuration.inMilliseconds,
+    );
+    
+    return await _audioPlayerService.playTrack(spotifyTrack);
+  }
+  
+  // Control playback
+  Future<void> pausePlayback() async {
+    await _audioPlayerService.pause();
+  }
+  
+  Future<void> resumePlayback() async {
+    await _audioPlayerService.play();
+  }
+  
+  Future<void> togglePlayback() async {
+    await _audioPlayerService.togglePlayPause();
+  }
+  
+  Future<void> stopPlayback() async {
+    await _audioPlayerService.stop();
+  }
+  
+  // Get playback state
+  bool get isPlaying => _audioPlayerService.isPlaying;
+  Stream<bool> get playingStream => _audioPlayerService.playingStream;
+  Stream<Duration> get positionStream => _audioPlayerService.positionStream;
+  Stream<Duration?> get durationStream => _audioPlayerService.durationStream;
 
   // Set profile song for user
   Future<void> setProfileSong(String userId, ProfileSong song) async {

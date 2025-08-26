@@ -51,6 +51,20 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with TickerProv
     _loadPlaybackSettings();
     _loadUserPosts();
     _loadCurrentMood();
+    
+    // Listen to playback state changes
+    _musicService.playingStream.listen((playing) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = playing;
+          if (playing) {
+            _rotationController.repeat();
+          } else {
+            _rotationController.stop();
+          }
+        });
+      }
+    });
   }
 
   Future<void> _loadProfileSong() async {
@@ -93,15 +107,37 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with TickerProv
     super.dispose();
   }
 
-  void _togglePlayback() {
+  void _togglePlayback() async {
+    if (_profileSong == null) return;
+    
     setState(() {
       _isPlaying = !_isPlaying;
-      if (_isPlaying) {
+    });
+    
+    if (_isPlaying) {
+      // Start playing the audio
+      final success = await _musicService.playTrackPreview(_profileSong!);
+      if (success) {
         _rotationController.repeat();
       } else {
-        _rotationController.stop();
+        // Failed to play, reset state
+        setState(() {
+          _isPlaying = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No preview available for this track'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
-    });
+    } else {
+      // Stop playing
+      await _musicService.pausePlayback();
+      _rotationController.stop();
+    }
   }
 
   void _toggleMute() async {
@@ -177,48 +213,55 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with TickerProv
   }
 
   Widget _buildProfileHeader() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        children: [
-          Row(
+    return Stack(
+      children: [
+        // Background visualizer effects
+        Positioned.fill(
+          child: _buildBackgroundVisualizer(),
+        ),
+        // Main content
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
             children: [
-              // Left side - Avatar
-              Stack(
-                alignment: Alignment.center,
+              Row(
                 children: [
-                  if (_profileSong != null && _isPlaying)
-                    CircularVisualizer(
-                      isPlaying: _isPlaying,
-                      color: widget.userProfile.rank.primaryColor,
-                      size: 100,
-                    ),
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: widget.userProfile.rank.primaryColor,
-                        width: 2,
-                      ),
-                      image: widget.userProfile.avatarUrl != null
-                          ? DecorationImage(
-                              image: NetworkImage(widget.userProfile.avatarUrl!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: widget.userProfile.avatarUrl == null
-                        ? Icon(
-                            Icons.person,
-                            size: 35,
+                  // Left side - Avatar
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (_profileSong != null)
+                        CircularVisualizer(
+                          isPlaying: _isPlaying,
+                          color: widget.userProfile.rank.primaryColor,
+                          size: 140,
+                        ),
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
                             color: widget.userProfile.rank.primaryColor,
-                          )
-                        : null,
+                            width: 3,
+                          ),
+                          image: widget.userProfile.avatarUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(widget.userProfile.avatarUrl!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: widget.userProfile.avatarUrl == null
+                            ? Icon(
+                                Icons.person,
+                                size: 50,
+                                color: widget.userProfile.rank.primaryColor,
+                              )
+                            : null,
+                      ),
+                    ],
                   ),
-                ],
-              ),
               const SizedBox(width: AppSpacing.lg),
               // Right side - User info and stats
               Expanded(
@@ -304,13 +347,96 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with TickerProv
               ),
             ],
           ),
-          // Song player section
-          if (_profileSong != null) ...[
-            const SizedBox(height: AppSpacing.lg),
-            _buildCompactSongPlayer(),
-          ],
-        ],
-      ),
+          // Bio section
+          const SizedBox(height: AppSpacing.lg),
+          _buildBioSection(),
+              // Song player section
+              if (_profileSong != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _buildCompactSongPlayer(),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildBackgroundVisualizer() {
+    return AnimatedBuilder(
+      animation: _rotationController,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                widget.userProfile.rank.primaryColor.withValues(alpha: 0.05),
+                Colors.transparent,
+                widget.userProfile.rank.secondaryColor.withValues(alpha: 0.05),
+              ],
+              stops: [
+                0.0,
+                _isPlaying ? 0.5 + (_rotationController.value * 0.3) : 0.5,
+                1.0,
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Floating particles effect
+              ...List.generate(5, (index) {
+                final delay = index * 0.2;
+                final opacity = _isPlaying ? 0.3 : 0.1;
+                return Positioned(
+                  left: 50.0 + (index * 60) + (_isPlaying ? (20 * _rotationController.value) : 0),
+                  top: 20.0 + (index * 15) % 100,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 1000),
+                    opacity: opacity,
+                    child: Container(
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: widget.userProfile.rank.primaryColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.userProfile.rank.primaryColor,
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              // Diagonal light streaks
+              if (_isPlaying)
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: LightStreaksPainter(
+                      color: widget.userProfile.rank.primaryColor.withValues(alpha: 0.1),
+                      animationValue: _rotationController.value,
+                    ),
+                  ),
+                ),
+              // Subtle mesh pattern overlay
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: MeshPatternPainter(
+                    color: widget.userProfile.rank.primaryColor.withValues(alpha: 0.02),
+                    isAnimated: _isPlaying,
+                    animationValue: _rotationController.value,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
   
@@ -336,6 +462,51 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with TickerProv
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildBioSection() {
+    // Sample bio text - in a real app, this would come from the user profile
+    final String bio = widget.isOwnProfile 
+        ? "Tap to add your bio..." 
+        : "🎧 Electronic music enthusiast | 🌃 Night owl | 🎵 House & Techno | 📍 NYC Underground Scene";
+    
+    return GestureDetector(
+      onTap: widget.isOwnProfile ? () {
+        // TODO: Open bio edit dialog
+      } : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: widget.isOwnProfile && bio == "Tap to add your bio..." 
+              ? AppColors.backgroundSecondary.withValues(alpha: 0.5)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: widget.isOwnProfile && bio == "Tap to add your bio..."
+              ? Border.all(
+                  color: AppColors.backgroundTertiary,
+                  style: BorderStyle.solid,
+                  width: 1,
+                )
+              : null,
+        ),
+        child: Text(
+          bio,
+          style: AppTextStyles.body2.copyWith(
+            color: widget.isOwnProfile && bio == "Tap to add your bio..." 
+                ? AppColors.textSecondary 
+                : AppColors.textPrimary,
+            fontStyle: widget.isOwnProfile && bio == "Tap to add your bio..." 
+                ? FontStyle.italic 
+                : FontStyle.normal,
+            height: 1.4,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
@@ -1171,5 +1342,86 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with TickerProv
         ],
       ),
     );
+  }
+}
+
+// Custom painter for light streaks effect
+class LightStreaksPainter extends CustomPainter {
+  final Color color;
+  final double animationValue;
+
+  LightStreaksPainter({
+    required this.color,
+    required this.animationValue,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    // Draw animated diagonal lines
+    for (int i = 0; i < 3; i++) {
+      final offset = (animationValue * 50) + (i * 100);
+      final path = Path()
+        ..moveTo(offset % size.width, 0)
+        ..lineTo((offset + 100) % size.width, size.height);
+      
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(LightStreaksPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
+  }
+}
+
+// Custom painter for mesh pattern effect
+class MeshPatternPainter extends CustomPainter {
+  final Color color;
+  final bool isAnimated;
+  final double animationValue;
+
+  MeshPatternPainter({
+    required this.color,
+    required this.isAnimated,
+    required this.animationValue,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+
+    const gridSize = 30.0;
+    final offset = isAnimated ? (animationValue * 10) : 0.0;
+
+    // Draw grid lines
+    for (double x = -gridSize; x < size.width + gridSize; x += gridSize) {
+      canvas.drawLine(
+        Offset(x + offset, 0),
+        Offset(x + offset - 20, size.height),
+        paint,
+      );
+    }
+
+    for (double y = 0; y < size.height; y += gridSize) {
+      canvas.drawLine(
+        Offset(0, y + offset),
+        Offset(size.width, y + offset),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(MeshPatternPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue ||
+           oldDelegate.isAnimated != isAnimated;
   }
 }

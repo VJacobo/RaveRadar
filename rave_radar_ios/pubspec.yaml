@@ -38,6 +38,13 @@ dependencies:
   supabase_flutter: ^2.8.1
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
+  # Audio playback
+  just_audio: ^0.9.36
+  audio_session: ^0.1.18
+  # Spotify integration
+  http: ^1.1.0
+  crypto: ^3.0.3
+  url_launcher: ^6.2.2
 
 dev_dependencies:
   flutter_test:
