@@ -155,7 +155,7 @@ class _EventSearchBarState extends State<EventSearchBar> {
                     color: AppColors.textTertiary,
                   ),
                 ),
-                ...['Berlin', 'Miami', 'London', 'Techno events', 'Tonight'].map((suggestion) {
+                ...['Houston', 'Miami', 'Berlin', 'NYC', 'Tonight'].map((suggestion) {
                   return GestureDetector(
                     onTap: () {
                       _searchController.text = suggestion;
@@ -336,10 +336,14 @@ class _AdvancedFiltersSheetState extends State<_AdvancedFiltersSheet> {
 
   // Popular worldwide locations
   final List<String> _popularLocations = [
+    'Houston, USA',
     'New York, USA',
     'Los Angeles, USA',
     'Miami, USA',
+    'Chicago, USA',
     'Las Vegas, USA',
+    'Austin, USA',
+    'Dallas, USA',
     'London, UK',
     'Berlin, Germany',
     'Amsterdam, Netherlands',
@@ -352,10 +356,6 @@ class _AdvancedFiltersSheetState extends State<_AdvancedFiltersSheet> {
     'Sydney, Australia',
     'Toronto, Canada',
     'Mexico City, Mexico',
-    'São Paulo, Brazil',
-    'Buenos Aires, Argentina',
-    'Tel Aviv, Israel',
-    'Mumbai, India',
   ];
 
   final List<String> _genres = [

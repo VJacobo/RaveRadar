@@ -23,6 +23,16 @@ class _EventsDiscoveryScreenState extends State<EventsDiscoveryScreen> {
   void initState() {
     super.initState();
     _eventService.initializeRealWorldEvents();
+    // Debug: Print all events after initialization
+    Future.delayed(Duration.zero, () {
+      final allEvents = _eventService.allEvents;
+      print('Total events loaded: ${allEvents.length}');
+      final houstonEvents = allEvents.where((e) => e.location.toLowerCase().contains('houston'));
+      print('Houston events: ${houstonEvents.length}');
+      for (var event in houstonEvents) {
+        print('- ${event.name} at ${event.venue}, ${event.location}');
+      }
+    });
   }
 
   List<EventModel> get _filteredEvents {
@@ -31,12 +41,26 @@ class _EventsDiscoveryScreenState extends State<EventsDiscoveryScreen> {
     
     // Apply search query
     if (_searchQuery.isNotEmpty) {
-      final searchLower = _searchQuery.toLowerCase();
+      final searchLower = _searchQuery.toLowerCase().trim();
       events = events.where((event) {
-        return event.name.toLowerCase().contains(searchLower) ||
-               event.venue.toLowerCase().contains(searchLower) ||
+        // For city searches, match more flexibly
+        final locationLower = event.location.toLowerCase();
+        final venueLower = event.venue.toLowerCase();
+        final nameLower = event.name.toLowerCase();
+        
+        // Check if it's a city search (just the city name without state)
+        final isCitySearch = ['houston', 'miami', 'chicago', 'austin', 'dallas', 'new york', 'los angeles'].any((city) => searchLower == city);
+        
+        if (isCitySearch) {
+          // For city searches, match even if location includes state
+          return locationLower.contains(searchLower);
+        }
+        
+        // Regular search across all fields
+        return nameLower.contains(searchLower) ||
+               venueLower.contains(searchLower) ||
                event.artists.any((artist) => artist.toLowerCase().contains(searchLower)) ||
-               event.location.toLowerCase().contains(searchLower);
+               locationLower.contains(searchLower);
       }).toList();
     }
     
@@ -124,10 +148,21 @@ class _EventsDiscoveryScreenState extends State<EventsDiscoveryScreen> {
   }
 
   void _handleSearch(String query, EventSearchFilters filters) {
+    print('Search query: "$query"');
+    print('Location filter: "${filters.location}"');
     setState(() {
       _searchQuery = query;
       _searchFilters = filters;
     });
+    // Debug filtered results
+    final filtered = _filteredEvents;
+    print('Filtered events count: ${filtered.length}');
+    if (query.toLowerCase().contains('houston') || (filters.location?.toLowerCase().contains('houston') ?? false)) {
+      print('Houston search - found ${filtered.length} events');
+      for (var event in filtered) {
+        print('- ${event.name} at ${event.location}');
+      }
+    }
   }
 
   void _handleEventTap(EventModel event) {
