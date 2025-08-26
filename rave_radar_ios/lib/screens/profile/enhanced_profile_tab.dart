@@ -25,7 +25,7 @@ class EnhancedProfileTab extends StatefulWidget {
   State<EnhancedProfileTab> createState() => _EnhancedProfileTabState();
 }
 
-class _EnhancedProfileTabState extends State<EnhancedProfileTab> with SingleTickerProviderStateMixin {
+class _EnhancedProfileTabState extends State<EnhancedProfileTab> with TickerProviderStateMixin {
   final MusicService _musicService = MusicService();
   final PostService _postService = PostService();
   final MoodService _moodService = MoodService();
@@ -35,6 +35,7 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with SingleTick
   SongReaction? _userReaction;
   PlaybackSettings _playbackSettings = PlaybackSettings();
   late TabController _tabController;
+  late AnimationController _rotationController;
   List<post_model.Post> _userPosts = [];
   mood_model.MoodPost? _currentMood;
 
@@ -42,6 +43,10 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with SingleTick
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
     _loadProfileSong();
     _loadPlaybackSettings();
     _loadUserPosts();
@@ -84,12 +89,18 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with SingleTick
   @override
   void dispose() {
     _tabController.dispose();
+    _rotationController.dispose();
     super.dispose();
   }
 
   void _togglePlayback() {
     setState(() {
       _isPlaying = !_isPlaying;
+      if (_isPlaying) {
+        _rotationController.repeat();
+      } else {
+        _rotationController.stop();
+      }
     });
   }
 
@@ -151,8 +162,6 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with SingleTick
     return Column(
       children: [
         _buildProfileHeader(),
-        if (_profileSong != null) _buildMusicPlayer(),
-        _buildStats(),
         _buildTabBar(),
         Expanded(
           child: TabBarView(
@@ -169,294 +178,355 @@ class _EnhancedProfileTabState extends State<EnhancedProfileTab> with SingleTick
 
   Widget _buildProfileHeader() {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              if (_profileSong != null && _isPlaying)
-                CircularVisualizer(
-                  isPlaying: _isPlaying,
-                  color: widget.userProfile.rank.primaryColor,
-                  size: 140,
-                ),
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: widget.userProfile.rank.primaryColor,
-                    width: 3,
-                  ),
-                  image: widget.userProfile.avatarUrl != null
-                      ? DecorationImage(
-                          image: NetworkImage(widget.userProfile.avatarUrl!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: widget.userProfile.avatarUrl == null
-                    ? Icon(
-                        Icons.person,
-                        size: 50,
-                        color: widget.userProfile.rank.primaryColor,
-                      )
-                    : null,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            widget.userProfile.djName,
-            style: AppTextStyles.headline1,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                widget.userProfile.username,
-                style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
-              ),
-              if (_currentMood != null && !_currentMood!.isExpired) ...[
-                Text(
-                  ' · ',
-                  style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
-                ),
-                _buildMoodBadgeInline(),
-              ],
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: widget.userProfile.rank.primaryColor.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              widget.userProfile.rank.name,
-              style: TextStyle(
-                color: widget.userProfile.rank.primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMusicPlayer() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(
-          color: widget.userProfile.rank.primaryColor.withValues(alpha: 0.3),
-        ),
-      ),
       child: Column(
         children: [
           Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  color: AppColors.backgroundTertiary,
-                  child: _profileSong!.albumArt != null
-                      ? Image.network(
-                          _profileSong!.albumArt!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.music_note,
-                            color: Colors.white54,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.music_note,
-                          color: Colors.white54,
-                        ),
-                ),
+              // Left side - Avatar
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (_profileSong != null && _isPlaying)
+                    CircularVisualizer(
+                      isPlaying: _isPlaying,
+                      color: widget.userProfile.rank.primaryColor,
+                      size: 100,
+                    ),
+                  Container(
+                    width: 70,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: widget.userProfile.rank.primaryColor,
+                        width: 2,
+                      ),
+                      image: widget.userProfile.avatarUrl != null
+                          ? DecorationImage(
+                              image: NetworkImage(widget.userProfile.avatarUrl!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: widget.userProfile.avatarUrl == null
+                        ? Icon(
+                            Icons.person,
+                            size: 35,
+                            color: widget.userProfile.rank.primaryColor,
+                          )
+                        : null,
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.lg),
+              // Right side - User info and stats
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Name and username
                     Text(
-                      _profileSong!.title,
-                      style: AppTextStyles.body1.copyWith(
+                      widget.userProfile.djName,
+                      style: AppTextStyles.headline2.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      _profileSong!.artist,
-                      style: AppTextStyles.caption,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xs,
-                            vertical: 2,
+                        Text(
+                          widget.userProfile.username,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
                           ),
-                          decoration: BoxDecoration(
-                            color: _profileSong!.source.color.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            _profileSong!.source.displayName,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: _profileSong!.source.color,
+                        ),
+                        if (_currentMood != null && !_currentMood!.isExpired) ...[
+                          Text(
+                            ' · ',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          _playbackSettings.loopSnippet ? '🔁' : '▶️',
-                          style: const TextStyle(fontSize: 10),
-                        ),
+                          _buildMoodBadgeInline(),
+                        ],
                       ],
                     ),
+                    const SizedBox(height: AppSpacing.md),
+                    // Followers and Following stats
+                    Row(
+                      children: [
+                        _buildCompactSocialStat('2.4K', 'followers'),
+                        const SizedBox(width: AppSpacing.lg),
+                        _buildCompactSocialStat('842', 'following'),
+                      ],
+                    ),
+                    if (!widget.isOwnProfile) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: widget.userProfile.rank.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.xl,
+                                  vertical: AppSpacing.sm,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppRadius.md),
+                                ),
+                              ),
+                              child: const Text('Follow'),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: AppColors.backgroundTertiary,
+                              ),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.message_outlined, size: 20),
+                              onPressed: () {},
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              constraints: const BoxConstraints(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
-              ),
-              IconButton(
-                icon: Icon(
-                  _isPlaying ? Icons.pause_circle : Icons.play_circle,
-                  size: 40,
-                  color: widget.userProfile.rank.primaryColor,
-                ),
-                onPressed: _togglePlayback,
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          AudioVisualizer(
-            isPlaying: _isPlaying,
-            color: widget.userProfile.rank.primaryColor,
-            height: 30,
-            barCount: 25,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (!widget.isOwnProfile) _buildReactionButtons(),
+          // Song player section
+          if (_profileSong != null) ...[
+            const SizedBox(height: AppSpacing.lg),
+            _buildCompactSongPlayer(),
+          ],
         ],
       ),
     );
   }
-
-  Widget _buildReactionButtons() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: SongReaction.values.map((reaction) {
-            final isSelected = _userReaction == reaction;
-            return GestureDetector(
-              onTap: () => _reactToSong(reaction),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? widget.userProfile.rank.primaryColor.withValues(alpha: 0.2)
-                      : AppColors.backgroundTertiary,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: isSelected
-                      ? Border.all(color: widget.userProfile.rank.primaryColor)
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(reaction.emoji, style: const TextStyle(fontSize: 20)),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      reaction.label,
-                      style: TextStyle(
-                        color: isSelected
-                            ? widget.userProfile.rank.primaryColor
-                            : AppColors.textSecondary,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+  
+  Widget _buildCompactSocialStat(String count, String label) {
+    return GestureDetector(
+      onTap: () {
+        // TODO: Navigate to followers/following list
+      },
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: count,
+              style: AppTextStyles.body1.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            TextSpan(
+              text: ' $label',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildCompactSongPlayer() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundSecondary,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: widget.userProfile.rank.primaryColor.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Record player
+          GestureDetector(
+            onTap: _togglePlayback,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black,
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.userProfile.rank.primaryColor.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Rotating vinyl record
+                  AnimatedBuilder(
+                    animation: _rotationController,
+                    builder: (context, child) {
+                      return Transform.rotate(
+                        angle: _rotationController.value * 2 * 3.14159,
+                        child: child,
+                      );
+                    },
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Vinyl record design
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                Colors.grey.shade900,
+                                Colors.black,
+                                Colors.grey.shade800,
+                                Colors.black,
+                              ],
+                              stops: const [0.0, 0.3, 0.7, 1.0],
+                            ),
+                          ),
+                        ),
+                        // Record grooves
+                        ...List.generate(2, (index) {
+                          return Container(
+                            width: 45 - (index * 12),
+                            height: 45 - (index * 12),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.grey.shade800,
+                                width: 0.5,
+                              ),
+                            ),
+                          );
+                        }),
+                        // Center label
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: widget.userProfile.rank.primaryColor,
+                            image: _profileSong!.albumArt != null
+                                ? DecorationImage(
+                                    image: NetworkImage(_profileSong!.albumArt!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: _profileSong!.albumArt == null
+                              ? Icon(
+                                  Icons.music_note,
+                                  size: 14,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Play/Pause overlay
+                  AnimatedOpacity(
+                    opacity: _isPlaying ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.5),
+                      ),
+                      child: Icon(
+                        Icons.play_arrow,
+                        color: Colors.white.withValues(alpha: 0.8),
+                        size: 24,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _saveSong,
-            icon: const Icon(Icons.bookmark_add),
-            label: const Text('Save This Song'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.userProfile.rank.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  // Playing indicator
+                  if (_isPlaying)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.green,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green,
+                              blurRadius: 3,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStats() {
-    return Container(
-      margin: const EdgeInsets.all(AppSpacing.xl),
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem('Points', widget.userProfile.totalPoints.toString()),
-          _buildStatItem('Genres', widget.userProfile.preferredGenres.length.toString()),
-          _buildStatItem('Badges', widget.userProfile.unlockedBadges.length.toString()),
+          const SizedBox(width: AppSpacing.md),
+          // Song info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _profileSong!.title,
+                  style: AppTextStyles.body2.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _profileSong!.artist,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          // Visual indicator
+          if (_isPlaying) ...[
+            const SizedBox(width: AppSpacing.md),
+            AudioVisualizer(
+              isPlaying: _isPlaying,
+              color: widget.userProfile.rank.primaryColor,
+              height: 20,
+              barCount: 5,
+            ),
+          ],
         ],
       ),
     );
   }
+  
 
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: AppTextStyles.headline2.copyWith(
-            color: widget.userProfile.rank.primaryColor,
-          ),
-        ),
-        Text(
-          label,
-          style: AppTextStyles.caption,
-        ),
-      ],
-    );
-  }
 
   Widget _buildSettings() {
     if (!widget.isOwnProfile) return const SizedBox.shrink();
